@@ -4,6 +4,9 @@ GO_BIN := ${GOPATH}/bin
 GOBUILD := GO111MODULE=on go build -v
 GOINSTALL := GO111MODULE=on go install -v
 
+COMMIT := $(shell git log --pretty=format:'%h' -n 1)
+LDFLAGS := -ldflags "-X $(PKG)/build.Commit=$(COMMIT)"
+
 LINT_PKG := github.com/golangci/golangci-lint/cmd/golangci-lint
 
 LINT_BIN := $(GO_BIN)/golangci-lint
@@ -34,11 +37,11 @@ endef
 
 build:
 	@$(call print, "Building channel-bot")
-	$(GOBUILD) -o channel-bot $(PKG)
+	$(GOBUILD) -o channel-bot $(LDFLAGS) $(PKG)
 
 install:
 	@$(call print, "Installing channel-bot")
-	$(GOINSTALL) $(PKG)
+	$(GOINSTALL) $(LDFLAGS) $(PKG)
 
 #
 # Utils
@@ -51,3 +54,5 @@ fmt:
 lint: $(LINT_BIN)
 	@$(call print, "Linting source.")
 	$(LINT)
+
+.PHONY: build

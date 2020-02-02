@@ -14,3 +14,6 @@ channel-bot
 
 # Dependency directories
 vendor/
+
+# Log files
+channel-bot.log

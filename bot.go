@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
-
 func main() {
-	fmt.Println("test")
+	cfg := loadConfig()
+	initLogger(cfg.LogFile)
+	logConfig(cfg)
 }
