@@ -17,3 +17,6 @@ vendor/
 
 # Log files
 channel-bot.log
+
+# Config files
+channel-bot.conf

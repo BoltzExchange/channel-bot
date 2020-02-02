@@ -1,20 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/BoltzExchange/channel-bot/build"
+	"github.com/BoltzExchange/channel-bot/discord"
+	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/google/logger"
 	"github.com/jessevdk/go-flags"
-	"os"
 )
-
-type lndConfig struct {
-	Host        string `long:"host" description:"gRPC host of the LND node"`
-	Port        int    `long:"port" description:"gRPC port of the LND node"`
-	Macaroon    string `long:"macaron" description:"Path to a macaroon file of the LND node"`
-	Certificate string `long:"certificate" description:"Path to a certificate file of the LND node"`
-}
 
 type helpOptions struct {
 	ShowHelp    bool `short:"h" long:"help" description:"Display this help message"`
@@ -25,14 +20,16 @@ type config struct {
 	ConfigFile string `short:"c" long:"configfile" description:"Path to configuration file"`
 	LogFile    string `short:"l" long:"logfile" description:"Path to the log file"`
 
-	Lnd *lndConfig `group:"LND Options"`
+	Lnd     *lnd.LND        `group:"LND Options"`
+	Discord discord.Discord `group:"Discord Options"`
 
 	Help *helpOptions `group:"Help Options"`
 }
 
 func loadConfig() *config {
 	cfg := config{
-		LogFile: "./channel-bot.log",
+		LogFile:    "./channel-bot.log",
+		ConfigFile: "./channel-bot.conf",
 	}
 
 	parser := flags.NewParser(&cfg, flags.IgnoreUnknown)
@@ -56,7 +53,7 @@ func loadConfig() *config {
 		err = flags.IniParse(cfg.ConfigFile, &cfg)
 
 		if err != nil {
-			printFatal("Could not read config file: %s\n", err)
+			fmt.Println(fmt.Sprintf("Could not read config file: %s", err))
 		}
 	}
 
@@ -64,7 +61,5 @@ func loadConfig() *config {
 }
 
 func logConfig(cfg *config) {
-	configJSON, _ := json.MarshalIndent(cfg, "", "  ")
-
-	logger.Info("Config: " + string(configJSON))
+	logger.Info("Loaded config: " + stringify(cfg))
 }
