@@ -20,8 +20,10 @@ type config struct {
 	ConfigFile string `short:"c" long:"configfile" description:"Path to configuration file"`
 	LogFile    string `short:"l" long:"logfile" description:"Path to the log file"`
 
-	Lnd     *lnd.LND        `group:"LND Options"`
-	Discord discord.Discord `group:"Discord Options"`
+	Interval int `short:"i" long:"interval" description:"Interval in seconds at which the channel balances should be checked"`
+
+	Lnd     *lnd.LND         `group:"LND Options"`
+	Discord *discord.Discord `group:"Discord Options"`
 
 	Help *helpOptions `group:"Help Options"`
 }
@@ -30,6 +32,7 @@ func loadConfig() *config {
 	cfg := config{
 		LogFile:    "./channel-bot.log",
 		ConfigFile: "./channel-bot.conf",
+		Interval:   60,
 	}
 
 	parser := flags.NewParser(&cfg, flags.IgnoreUnknown)

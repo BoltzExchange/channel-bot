@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/BoltzExchange/channel-bot/channel"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
@@ -14,6 +15,14 @@ func main() {
 
 	initLnd(cfg)
 	initDiscord(cfg)
+
+	channelManager := channel.ChannelManager{
+		Lnd:      cfg.Lnd,
+		Discord:  cfg.Discord,
+		Interval: cfg.Interval,
+	}
+
+	channelManager.Init()
 }
 
 func initLnd(cfg *config) {
