@@ -59,3 +59,9 @@ func (lnd *LND) GetInfo() (*lnrpc.GetInfoResponse, error) {
 func (lnd *LND) ListChannels() (*lnrpc.ListChannelsResponse, error) {
 	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{})
 }
+
+func (lnd *LND) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
+	return lnd.client.GetNodeInfo(lnd.ctx, &lnrpc.NodeInfoRequest{
+		PubKey: pubkey,
+	})
+}

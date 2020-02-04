@@ -22,7 +22,7 @@ func main() {
 		Interval: cfg.Interval,
 	}
 
-	channelManager.Init()
+	channelManager.Init(cfg.SignificantChannels)
 }
 
 func initLnd(cfg *config) {

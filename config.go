@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/BoltzExchange/channel-bot/build"
+	"github.com/BoltzExchange/channel-bot/channel"
 	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BurntSushi/toml"
 	"github.com/google/logger"
 	"github.com/jessevdk/go-flags"
 )
@@ -25,13 +27,15 @@ type config struct {
 	Lnd     *lnd.LND         `group:"LND Options"`
 	Discord *discord.Discord `group:"Discord Options"`
 
+	SignificantChannels []*channel.SignificantChannel `group:"Significant Channels Options"`
+
 	Help *helpOptions `group:"Help Options"`
 }
 
 func loadConfig() *config {
 	cfg := config{
 		LogFile:    "./channel-bot.log",
-		ConfigFile: "./channel-bot.conf",
+		ConfigFile: "./channel-bot.toml",
 		Interval:   60,
 	}
 
@@ -49,18 +53,28 @@ func loadConfig() *config {
 	}
 
 	if err != nil {
-		printFatal("Could not prase CLI arguments: %s\n", err)
+		printCouldNotParseCli(err)
 	}
 
 	if cfg.ConfigFile != "" {
-		err = flags.IniParse(cfg.ConfigFile, &cfg)
+		_, err := toml.DecodeFile(cfg.ConfigFile, &cfg)
 
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Could not read config file: %s", err))
 		}
 	}
 
+	_, err = flags.Parse(&cfg)
+
+	if err != nil {
+		printCouldNotParseCli(err)
+	}
+
 	return &cfg
+}
+
+func printCouldNotParseCli(err error) {
+	printFatal("Could not parse CLI arguments: %s", err)
 }
 
 func logConfig(cfg *config) {

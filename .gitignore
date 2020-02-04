@@ -19,4 +19,4 @@ vendor/
 channel-bot.log
 
 # Config files
-channel-bot.conf
+channel-bot.toml

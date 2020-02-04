@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/logger"
 	"log"
 	"os"
+
+	"github.com/google/logger"
 )
 
 func initLogger(logPath string) {
 	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 
 	if err != nil {
-		printFatal("Could not open log file: %s\n", err)
+		printFatal("Could not open log file: %s", err)
 	}
 
 	logger.Init("channel-bot", true, true, file)
@@ -21,6 +22,6 @@ func initLogger(logPath string) {
 }
 
 func printFatal(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
+	fmt.Printf(format+"\n", a...)
 	os.Exit(1)
 }
