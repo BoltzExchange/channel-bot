@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/BoltzExchange/channel-bot/build"
-	"github.com/BoltzExchange/channel-bot/channel"
 	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BoltzExchange/channel-bot/notifications"
 	"github.com/BurntSushi/toml"
 	"github.com/google/logger"
 	"github.com/jessevdk/go-flags"
@@ -27,7 +27,7 @@ type config struct {
 	Lnd     *lnd.LND         `group:"LND Options"`
 	Discord *discord.Discord `group:"Discord Options"`
 
-	SignificantChannels []*channel.SignificantChannel `group:"Significant Channels Options"`
+	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
 
 	Help *helpOptions `group:"Help Options"`
 }

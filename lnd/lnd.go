@@ -60,6 +60,10 @@ func (lnd *LND) ListChannels() (*lnrpc.ListChannelsResponse, error) {
 	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{})
 }
 
+func (lnd *LND) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
+	return lnd.client.ClosedChannels(lnd.ctx, &lnrpc.ClosedChannelsRequest{})
+}
+
 func (lnd *LND) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
 	return lnd.client.GetNodeInfo(lnd.ctx, &lnrpc.NodeInfoRequest{
 		PubKey: pubkey,

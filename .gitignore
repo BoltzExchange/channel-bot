@@ -20,3 +20,6 @@ channel-bot.log
 
 # Config files
 channel-bot.toml
+
+# GoLand config
+.idea/

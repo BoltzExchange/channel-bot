@@ -9,6 +9,9 @@ require (
 	github.com/google/logger v1.0.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/lightningnetwork/lnd v0.9.0-beta
+	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073 // indirect
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
-	google.golang.org/grpc v1.27.0
+	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
+	golang.org/x/text v0.3.2 // indirect
+	google.golang.org/grpc v1.27.1
 )
