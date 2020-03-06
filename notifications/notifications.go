@@ -83,6 +83,21 @@ func (manager *ChannelManager) check() {
 	manager.checkClosedChannels()
 }
 
+func getNodeName(lnd *lnd.LND, remotePubkey string) string {
+	nodeName := remotePubkey
+
+	nodeInfo, err := lnd.GetNodeInfo(remotePubkey)
+
+	// Use the alias if it can be queried and is not empty
+	if err == nil {
+		if nodeInfo.Node.Alias != "" {
+			nodeName = nodeInfo.Node.Alias
+		}
+	}
+
+	return nodeName
+}
+
 func formatChannelID(channelId uint64) string {
 	return strconv.FormatUint(channelId, 10)
 }

@@ -113,14 +113,7 @@ func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced b
 		info = "balanced again"
 	}
 
-	nodeInfo, err := manager.Lnd.GetNodeInfo(channel.RemotePubkey)
-
-	if err != nil {
-		logger.Error("Could not get node info: " + err.Error())
-		return
-	}
-
-	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + nodeInfo.Node.Alias + "` is **" + info + "**:\n"
+	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + getNodeName(manager.Lnd, channel.RemotePubkey) + "` is **" + info + "**:\n"
 
 	localBalance, remoteBalance := formatChannelBalances(channel)
 	message += localBalance + "\n" + remoteBalance

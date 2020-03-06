@@ -32,22 +32,13 @@ func (manager *ChannelManager) checkClosedChannels() {
 }
 
 func (manager *ChannelManager) logClosedChannel(channel *lnrpc.ChannelCloseSummary) {
-	nodeName := channel.RemotePubkey
-
-	nodeInfo, err := manager.Lnd.GetNodeInfo(channel.RemotePubkey)
-
-	// Use the alias if it can be queried
-	if err == nil {
-		nodeName = nodeInfo.Node.Alias
-	}
-
 	closeType := "closed"
 
 	if channel.CloseType != lnrpc.ChannelCloseSummary_COOPERATIVE_CLOSE {
 		closeType = "**force closed** :rotating_light:"
 	}
 
-	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + nodeName + "` was " + closeType
+	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + getNodeName(manager.Lnd, channel.RemotePubkey) + "` was " + closeType
 
 	logger.Info(message)
 	_ = manager.Discord.SendMessage(message)
