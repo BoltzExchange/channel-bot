@@ -60,7 +60,7 @@ func loadConfig() *config {
 		_, err := toml.DecodeFile(cfg.ConfigFile, &cfg)
 
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Could not read config file: %s", err))
+			fmt.Printf("Could not read config file: %s\n", err)
 		}
 	}
 
