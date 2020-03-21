@@ -38,6 +38,7 @@ func (lnd *LND) Connect() error {
 	}
 
 	lnd.client = lnrpc.NewLightningClient(con)
+
 	if lnd.ctx == nil {
 		macaroonFile, err := ioutil.ReadFile(lnd.Macaroon)
 

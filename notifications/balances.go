@@ -24,7 +24,7 @@ func (manager *ChannelManager) checkBalances() {
 	for _, channel := range channels.Channels {
 		_, isSignificant := manager.significantChannels[channel.ChanId]
 
-		if channel.Private || isSignificant {
+		if channel.UnsettledBalance != 0 || channel.Private || isSignificant {
 			continue
 		}
 
@@ -52,7 +52,7 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels *lnrpc.L
 	for _, channel := range channels.Channels {
 		significantChannel, isSignificant := manager.significantChannels[channel.ChanId]
 
-		if !isSignificant {
+		if channel.UnsettledBalance != 0 || !isSignificant {
 			continue
 		}
 
