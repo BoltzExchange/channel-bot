@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
@@ -8,7 +9,7 @@ import (
 func (manager *ChannelManager) checkClosedChannels() {
 	logger.Info("Checking closed channels")
 
-	closedChannels, err := manager.Lnd.ClosedChannels()
+	closedChannels, err := manager.lnd.ClosedChannels()
 
 	if err != nil {
 		logger.Error("Could not get closed channels: " + err.Error())
@@ -38,8 +39,8 @@ func (manager *ChannelManager) logClosedChannel(channel *lnrpc.ChannelCloseSumma
 		closeType = "**force closed** :rotating_light:"
 	}
 
-	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + getNodeName(manager.Lnd, channel.RemotePubkey) + "` was " + closeType
+	message := "Channel `" + lnd.FormatChannelID(channel.ChanId) + "` to `" + lnd.GetNodeName(manager.lnd, channel.RemotePubkey) + "` was " + closeType
 
 	logger.Info(message)
-	_ = manager.Discord.SendMessage(message)
+	_ = manager.discord.SendMessage(message)
 }

@@ -8,6 +8,10 @@ import (
 	"github.com/google/logger"
 )
 
+type NotificationService interface {
+	SendMessage(message string) error
+}
+
 type Discord struct {
 	Token   string `long:"discord.token" description:"Discord authentication token"`
 	Channel string `long:"discord.channel" description:"Name of the channel to which messages should be sent"`

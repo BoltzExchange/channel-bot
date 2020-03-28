@@ -9,10 +9,10 @@ import (
 )
 
 type ChannelManager struct {
-	Interval int
+	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked"`
 
-	Lnd     *lnd.LND
-	Discord *discord.Discord
+	lnd     *lnd.LND
+	discord *discord.Discord
 
 	imbalancedChannels  map[uint64]bool
 	significantChannels map[uint64]SignificantChannel
@@ -60,7 +60,7 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
 	// Closed channel notifications related initializations
 	manager.closedChannels = make(map[uint64]bool)
 
-	nodeInfo, err := manager.Lnd.GetInfo()
+	nodeInfo, err := manager.lnd.GetInfo()
 
 	if err != nil {
 		logger.Fatal("Could not get node info: " + err.Error())
@@ -81,23 +81,4 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
 func (manager *ChannelManager) check() {
 	manager.checkBalances()
 	manager.checkClosedChannels()
-}
-
-func getNodeName(lnd *lnd.LND, remotePubkey string) string {
-	nodeName := remotePubkey
-
-	nodeInfo, err := lnd.GetNodeInfo(remotePubkey)
-
-	// Use the alias if it can be queried and is not empty
-	if err == nil {
-		if nodeInfo.Node.Alias != "" {
-			nodeName = nodeInfo.Node.Alias
-		}
-	}
-
-	return nodeName
-}
-
-func formatChannelID(channelId uint64) string {
-	return strconv.FormatUint(channelId, 10)
 }
