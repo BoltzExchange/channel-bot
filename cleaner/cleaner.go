@@ -5,6 +5,7 @@ import (
 	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"math"
 	"strconv"
 	"time"
 )
@@ -100,7 +101,7 @@ func (cleaner *ChannelCleaner) logClosingChannels(channel *lnrpc.Channel, lastUp
 		channelType = "private"
 	}
 
-	lastUpdateDelta := int(time.Since(lastUpdate).Hours()) / 24
+	lastUpdateDelta := int(math.Round(time.Since(lastUpdate).Hours() / 24))
 
 	message := "Force closing " + channelType + " channel `" + lnd.FormatChannelID(channel.ChanId) + "` to `" + lnd.GetNodeName(cleaner.lnd, channel.RemotePubkey) +
 		"` because it was inactive for " + strconv.Itoa(lastUpdateDelta) + " days"

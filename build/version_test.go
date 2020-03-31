@@ -1,11 +1,12 @@
 package build
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
 
 func TestGetVersion(t *testing.T) {
 	result := "v" + version + "-" + Commit
 
-	if GetVersion() != result {
-		t.Error("Version is not formatted correctly: " + result)
-	}
+	assert.Equal(t, GetVersion(), result, "Version is not formatted correctly")
 }

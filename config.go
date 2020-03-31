@@ -29,9 +29,10 @@ type config struct {
 	Lnd     *lnd.LND         `group:"LND Options"`
 	Discord *discord.Discord `group:"Discord Options"`
 
-	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
-
 	Help *helpOptions `group:"Help Options"`
+
+	// This option is only parsed in the TOML config file
+	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
 }
 
 func loadConfig() *config {

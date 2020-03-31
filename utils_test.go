@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -15,7 +16,5 @@ func TestStringify(t *testing.T) {
 
 	expectedResult := "{\n  \"Test\": \"variable\"\n}"
 
-	if stringify(test) != expectedResult {
-		t.Error("Did not stringify interface correctly: " + stringify(test))
-	}
+	assert.Equal(t, expectedResult, stringify(test), "Did not stringify interface correctly: "+stringify(test))
 }

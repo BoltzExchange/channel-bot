@@ -15,15 +15,9 @@ func main() {
 	initLnd(cfg)
 	initDiscord(cfg)
 
-	/*	go func() {
-		channelManager := notifications.ChannelManager{
-			lnd:      cfg.lnd,
-			discord:  cfg.discord,
-			Interval: cfg.Interval,
-		}
-
-		channelManager.Init(cfg.SignificantChannels)
-	}()*/
+	go func() {
+		cfg.Notifications.Init(cfg.SignificantChannels, cfg.Lnd, cfg.Discord)
+	}()
 
 	cfg.ChannelCleaner.Init(cfg.Lnd, cfg.Discord)
 }

@@ -3,7 +3,8 @@ package lnd
 import (
 	"errors"
 	"github.com/lightningnetwork/lnd/lnrpc"
-	"reflect"
+	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -13,6 +14,18 @@ const failPublicKey = "fail"
 const emptyPublicKey = "empty"
 
 type MockLndClient struct{}
+
+func (m *MockLndClient) GetInfo() (*lnrpc.GetInfoResponse, error) {
+	panic("")
+}
+
+func (m *MockLndClient) ListChannels() (*lnrpc.ListChannelsResponse, error) {
+	panic("")
+}
+
+func (m *MockLndClient) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
+	panic("")
+}
 
 func (m *MockLndClient) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
 	nodeInfo := &lnrpc.NodeInfo{
@@ -59,22 +72,13 @@ func TestGetNodeName(t *testing.T) {
 	client := &MockLndClient{}
 
 	nodeName := GetNodeName(client, "")
-
-	if nodeName != nodeAlias {
-		t.Error("Node name is not queried alias")
-	}
+	assert.Equal(t, nodeAlias, nodeName, "Node name is not queried alias")
 
 	nodeName = GetNodeName(client, failPublicKey)
-
-	if nodeName != failPublicKey {
-		t.Error("Node name is not remote public key if alias cannot be queried")
-	}
+	assert.Equal(t, failPublicKey, nodeName, "Node name is not remote public key if alias cannot be queried")
 
 	nodeName = GetNodeName(client, emptyPublicKey)
-
-	if nodeName != emptyPublicKey {
-		t.Error("Node name is not remote public key if alias is an empty string")
-	}
+	assert.Equal(t, emptyPublicKey, nodeName, "Node name is not remote public key if alias is an empty string")
 }
 
 func TestFormatChannelID(t *testing.T) {
@@ -91,9 +95,7 @@ func TestFormatChannelID(t *testing.T) {
 	}
 
 	for i, id := range channelIds {
-		if FormatChannelID(id) != expectedResults[i] {
-			t.Errorf("Channel ID \"%v\" is not formatted correctly", id)
-		}
+		assert.Equal(t, expectedResults[i], FormatChannelID(id), "Channel ID "+strconv.FormatInt(int64(id), 10)+" is not formatted correctly")
 	}
 }
 
@@ -119,10 +121,6 @@ func TestParseChannelPoint(t *testing.T) {
 	}
 
 	for i, channelPoint := range channelPoints {
-		equal := reflect.DeepEqual(parseChannelPoint(channelPoint), expectedResults[i])
-
-		if !equal {
-			t.Error("Channel point \"" + channelPoint + "\" is not parsed correctly")
-		}
+		assert.EqualValues(t, expectedResults[i], parseChannelPoint(channelPoint), "Channel point \""+channelPoint+"\" is not parsed correctly")
 	}
 }

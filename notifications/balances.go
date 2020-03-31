@@ -18,7 +18,7 @@ func (manager *ChannelManager) checkBalances() {
 		return
 	}
 
-	manager.checkSignificantChannelBalances(channels)
+	manager.checkSignificantChannelBalances(channels.Channels)
 
 	logger.Info("Checking normal channel balances")
 
@@ -40,6 +40,7 @@ func (manager *ChannelManager) checkBalances() {
 			continue
 		}
 
+		// Do not send notifications for a balanced channel more than once
 		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
 			continue
 		}
@@ -49,8 +50,8 @@ func (manager *ChannelManager) checkBalances() {
 	}
 }
 
-func (manager *ChannelManager) checkSignificantChannelBalances(channels *lnrpc.ListChannelsResponse) {
-	for _, channel := range channels.Channels {
+func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc.Channel) {
+	for _, channel := range channels {
 		significantChannel, isSignificant := manager.significantChannels[channel.ChanId]
 
 		if channel.UnsettledBalance != 0 || !isSignificant {
@@ -68,6 +69,7 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels *lnrpc.L
 			continue
 		}
 
+		// Do not send notifications for an imbalanced significant channel more than once
 		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
 			continue
 		}
@@ -81,7 +83,7 @@ func getChannelRatio(channel *lnrpc.Channel) float64 {
 	return float64(channel.LocalBalance) / float64(channel.Capacity)
 }
 
-func (significantChannel *SignificantChannel) logBalance(discord *discord.Discord, channel *lnrpc.Channel, isImbalanced bool) {
+func (significantChannel *SignificantChannel) logBalance(discord discord.NotificationService, channel *lnrpc.Channel, isImbalanced bool) {
 	var info string
 	var emoji string
 
@@ -97,8 +99,8 @@ func (significantChannel *SignificantChannel) logBalance(discord *discord.Discor
 
 	localBalance, remoteBalance := formatChannelBalances(channel)
 	message += localBalance + "\n"
-	message += "    Minimal: " + formatFloat(float64(channel.LocalBalance)*significantChannel.ratios.min) + "\n"
-	message += "    Maximal: " + formatFloat(float64(channel.LocalBalance)*significantChannel.ratios.max) + "\n"
+	message += "    Minimal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.min) + "\n"
+	message += "    Maximal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.max) + "\n"
 	message += remoteBalance
 
 	logger.Info(message)
@@ -123,13 +125,13 @@ func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced b
 	_ = manager.discord.SendMessage(message)
 }
 
-func formatFloat(float float64) string {
-	return strconv.FormatFloat(float, 'f', 0, 64)
-}
-
 func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string) {
 	local = "  Local: " + strconv.FormatInt(channel.LocalBalance, 10)
 	remote = "  Remote: " + strconv.FormatInt(channel.RemoteBalance, 10)
 
 	return local, remote
+}
+
+func formatFloat(float float64) string {
+	return strconv.FormatFloat(float, 'f', 0, 64)
 }

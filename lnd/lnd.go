@@ -15,7 +15,10 @@ import (
 )
 
 type LightningClient interface {
+	GetInfo() (*lnrpc.GetInfoResponse, error)
 	GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error)
+	ListChannels() (*lnrpc.ListChannelsResponse, error)
+	ClosedChannels() (*lnrpc.ClosedChannelsResponse, error)
 	GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error)
 	ListInactiveChannels() (*lnrpc.ListChannelsResponse, error)
 	ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseChannelClient, error)

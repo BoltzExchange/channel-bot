@@ -3,6 +3,7 @@ package cleaner
 import (
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"time"
@@ -28,6 +29,18 @@ func (m *MockDiscordClient) SendMessage(message string) error {
 }
 
 type MockLndClient struct{}
+
+func (m *MockLndClient) GetInfo() (*lnrpc.GetInfoResponse, error) {
+	panic("")
+}
+
+func (m *MockLndClient) ListChannels() (*lnrpc.ListChannelsResponse, error) {
+	panic("")
+}
+
+func (m *MockLndClient) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
+	panic("")
+}
 
 const nodeAlias = "alias"
 
@@ -81,7 +94,6 @@ func TestInit(t *testing.T) {
 	cleanUp()
 
 	mockWriter := &MockWriter{}
-
 	logger.Init("", false, false, mockWriter)
 
 	lnd := &MockLndClient{}
@@ -93,20 +105,12 @@ func TestInit(t *testing.T) {
 
 	time.Sleep(time.Duration(10) * time.Millisecond)
 
-	if cleaner.ticker == nil {
-		t.Error("Does not start ticker for periodical channel cleanup")
-	}
+	assert.NotNil(t, cleaner.ticker, "Does not start ticker for periodical channel cleanup")
 
-	if !strings.HasSuffix(loggedMessages[0], "Starting channel cleaner\n") {
-		t.Error("Does not send log message on startup")
-	}
-
-	if !strings.HasSuffix(loggedMessages[1], "Cleaning inactive channels\n") {
-		t.Error("Does not execute cleaning routine on startup")
-	}
+	assert.True(t, strings.HasSuffix(loggedMessages[0], "Starting channel cleaner\n"), "Does not send log message on startup")
+	assert.True(t, strings.HasSuffix(loggedMessages[1], "Cleaning inactive channels\n"), "Does not execute cleaning routine on startup")
 
 	cleaner.ticker.Stop()
-
 	cleanUp()
 }
 
@@ -114,22 +118,15 @@ func testForceClose(t *testing.T) {
 	// Should force close channel
 	cleaner.forceCloseChannels()
 
-	if forceClosedChannels[0] != inactiveChannelsResponse.Channels[0].ChannelPoint {
-		t.Error("Did not force close channel that has not been updated for longer than the max inactive time")
-	}
-
-	if len(sentMessages) != 1 || len(loggedMessages) != 2 {
-		t.Error("Did not log channel closure")
-	}
+	assert.Equal(t, inactiveChannelsResponse.Channels[0].ChannelPoint, forceClosedChannels[0], "Did not force close channel that has not been updated for longer than the max inactive time")
+	assert.True(t, len(sentMessages) == 1 && len(loggedMessages) == 2, "Did not log channel closure")
 
 	// Should not force close because the last update of node 2 is not old enough
 	channelInfo.Node2Policy.LastUpdate = uint32(time.Now().Unix())
 
 	cleaner.forceCloseChannels()
 
-	if len(forceClosedChannels) != 1 || len(sentMessages) != 1 {
-		t.Error("Did force close channel although the node 2 update is not old enough")
-	}
+	assert.True(t, len(forceClosedChannels) == 1 && len(sentMessages) == 1, "Did force close channel although the node 2 update is not old enough")
 
 	cleanUp()
 }
@@ -179,9 +176,7 @@ func TestForceCloseChannels(t *testing.T) {
 
 	cleaner.forceCloseChannels()
 
-	if len(forceClosedChannels) != 0 {
-		t.Error("Did force private because max timeout of public channels was used")
-	}
+	assert.Len(t, forceClosedChannels, 0, "Did force private because max timeout of public channels was used")
 
 	cleanUp()
 
@@ -207,9 +202,7 @@ func TestForceCloseChannels(t *testing.T) {
 
 	cleaner.forceCloseChannels()
 
-	if forceClosedChannels[0] != inactiveChannelsResponse.Channels[1].ChannelPoint {
-		t.Error("Loop was cancelled after first inactive channel that was not force closed")
-	}
+	assert.Equal(t, inactiveChannelsResponse.Channels[1].ChannelPoint, forceClosedChannels[0], "Loop was cancelled after first inactive channel that was not force closed")
 
 	cleanUp()
 }
@@ -230,18 +223,16 @@ func TestLogClosingChannels(t *testing.T) {
 
 	expectedMessage := "Force closing public channel `145135534931969` to `alias` because it was inactive for 90 days"
 
-	if sentMessages[0] != expectedMessage || !strings.HasSuffix(loggedMessages[0], sentMessages[0]+"\n") {
-		t.Error("Message sent before closing is invalid: " + sentMessages[0])
-	}
+	assert.Equal(t, expectedMessage, sentMessages[0], "Message sent before closing is invalid: "+sentMessages[0])
+	assert.True(t, strings.HasSuffix(loggedMessages[0], sentMessages[0]+"\n"))
 
 	channel.Private = true
 	expectedMessage = strings.Replace(expectedMessage, "public", "private", 1)
 
 	cleaner.logClosingChannels(channel, lastUpdate)
 
-	if sentMessages[1] != expectedMessage || !strings.HasSuffix(loggedMessages[1], sentMessages[1]+"\n") {
-		t.Error("Message sent before closing is invalid: " + sentMessages[1])
-	}
+	assert.Equal(t, expectedMessage, sentMessages[1], "Message sent before closing is invalid: "+sentMessages[0])
+	assert.True(t, strings.HasSuffix(loggedMessages[1], sentMessages[1]+"\n"))
 
 	cleanUp()
 }

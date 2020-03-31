@@ -11,8 +11,8 @@ import (
 type ChannelManager struct {
 	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked"`
 
-	lnd     *lnd.LND
-	discord *discord.Discord
+	lnd     lnd.LightningClient
+	discord discord.NotificationService
 
 	imbalancedChannels  map[uint64]bool
 	significantChannels map[uint64]SignificantChannel
@@ -20,6 +20,8 @@ type ChannelManager struct {
 	startupHeight uint32
 	// Map of closed channels for which notifications were sent already
 	closedChannels map[uint64]bool
+
+	ticker *time.Ticker
 }
 
 type ratios struct {
@@ -30,32 +32,24 @@ type ratios struct {
 type SignificantChannel struct {
 	Alias     string
 	ChannelID uint64
-	MinRatio  string
-	MaxRatio  string
 
+	// These values are just for parsing
+	MinRatio string
+	MaxRatio string
+
+	// This struct is actually used for comparisons
 	ratios ratios
 }
 
-func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
+func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, lnd lnd.LightningClient, discord discord.NotificationService) {
 	logger.Info("Starting notification bot")
 
-	// Balance notifications related initializations
+	manager.lnd = lnd
+	manager.discord = discord
+
+	// Balance notification related initializations
 	manager.imbalancedChannels = make(map[uint64]bool)
-	manager.significantChannels = make(map[uint64]SignificantChannel)
-
-	for _, significant := range significantChannels {
-		maxRatio, _ := strconv.ParseFloat(significant.MaxRatio, 64)
-		minRatio, _ := strconv.ParseFloat(significant.MinRatio, 64)
-
-		ratios := ratios{
-			max: maxRatio,
-			min: minRatio,
-		}
-
-		significant.ratios = ratios
-
-		manager.significantChannels[significant.ChannelID] = *significant
-	}
+	manager.parseSignificantChannels(significantChannels)
 
 	// Closed channel notifications related initializations
 	manager.closedChannels = make(map[uint64]bool)
@@ -71,9 +65,9 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
 
 	manager.check()
 
-	ticker := time.NewTicker(time.Duration(manager.Interval) * time.Second)
+	manager.ticker = time.NewTicker(time.Duration(manager.Interval) * time.Second)
 
-	for range ticker.C {
+	for range manager.ticker.C {
 		manager.check()
 	}
 }
@@ -81,4 +75,22 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
 func (manager *ChannelManager) check() {
 	manager.checkBalances()
 	manager.checkClosedChannels()
+}
+
+func (manager *ChannelManager) parseSignificantChannels(significantChannels []*SignificantChannel) {
+	manager.significantChannels = make(map[uint64]SignificantChannel)
+
+	for _, significant := range significantChannels {
+		maxRatio, _ := strconv.ParseFloat(significant.MaxRatio, 64)
+		minRatio, _ := strconv.ParseFloat(significant.MinRatio, 64)
+
+		ratios := ratios{
+			max: maxRatio,
+			min: minRatio,
+		}
+
+		significant.ratios = ratios
+
+		manager.significantChannels[significant.ChannelID] = *significant
+	}
 }
