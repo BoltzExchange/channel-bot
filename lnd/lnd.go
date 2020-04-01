@@ -14,6 +14,16 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+type LightningClient interface {
+	GetInfo() (*lnrpc.GetInfoResponse, error)
+	GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error)
+	ListChannels() (*lnrpc.ListChannelsResponse, error)
+	ClosedChannels() (*lnrpc.ClosedChannelsResponse, error)
+	GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error)
+	ListInactiveChannels() (*lnrpc.ListChannelsResponse, error)
+	ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseChannelClient, error)
+}
+
 type LND struct {
 	Host        string `long:"lnd.host" description:"gRPC host of the LND node"`
 	Port        int    `long:"lnd.port" description:"gRPC port of the LND node"`
@@ -61,6 +71,12 @@ func (lnd *LND) ListChannels() (*lnrpc.ListChannelsResponse, error) {
 	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{})
 }
 
+func (lnd *LND) ListInactiveChannels() (*lnrpc.ListChannelsResponse, error) {
+	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{
+		InactiveOnly: true,
+	})
+}
+
 func (lnd *LND) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
 	return lnd.client.ClosedChannels(lnd.ctx, &lnrpc.ClosedChannelsRequest{})
 }
@@ -68,5 +84,20 @@ func (lnd *LND) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
 func (lnd *LND) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
 	return lnd.client.GetNodeInfo(lnd.ctx, &lnrpc.NodeInfoRequest{
 		PubKey: pubkey,
+	})
+}
+
+func (lnd *LND) GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error) {
+	return lnd.client.GetChanInfo(lnd.ctx, &lnrpc.ChanInfoRequest{
+		ChanId: chanId,
+	})
+}
+
+func (lnd *LND) ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseChannelClient, error) {
+	channel := parseChannelPoint(channelPoint)
+
+	return lnd.client.CloseChannel(lnd.ctx, &lnrpc.CloseChannelRequest{
+		ChannelPoint: &channel,
+		Force:        true,
 	})
 }

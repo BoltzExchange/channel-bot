@@ -25,7 +25,10 @@ jobs:
 
     - name: Build
       run: make build
-    
+
+    - name: Test
+      run: make unit
+
     - name: Lint
       env:
         GOPATH: /home/runner/work/

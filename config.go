@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/BoltzExchange/channel-bot/cleaner"
 	"os"
 
 	"github.com/BoltzExchange/channel-bot/build"
@@ -22,21 +23,32 @@ type config struct {
 	ConfigFile string `short:"c" long:"configfile" description:"Path to configuration file"`
 	LogFile    string `short:"l" long:"logfile" description:"Path to the log file"`
 
-	Interval int `short:"i" long:"interval" description:"Interval in seconds at which the channel balances should be checked"`
+	Notifications  *notifications.ChannelManager `group:"Notification Options"`
+	ChannelCleaner *cleaner.ChannelCleaner       `group:"Channel Cleaner Options"`
 
 	Lnd     *lnd.LND         `group:"LND Options"`
 	Discord *discord.Discord `group:"Discord Options"`
 
-	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
-
 	Help *helpOptions `group:"Help Options"`
+
+	// This option is only parsed in the TOML config file
+	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
 }
 
 func loadConfig() *config {
 	cfg := config{
 		LogFile:    "./channel-bot.log",
 		ConfigFile: "./channel-bot.toml",
-		Interval:   60,
+
+		Notifications: &notifications.ChannelManager{
+			Interval: 60,
+		},
+
+		ChannelCleaner: &cleaner.ChannelCleaner{
+			Interval:               24,
+			MaxInactiveTime:        30,
+			MaxInactiveTimePrivate: 60,
+		},
 	}
 
 	parser := flags.NewParser(&cfg, flags.IgnoreUnknown)
@@ -60,7 +72,7 @@ func loadConfig() *config {
 		_, err := toml.DecodeFile(cfg.ConfigFile, &cfg)
 
 		if err != nil {
-			fmt.Printf("Could not read config file: %s\n", err)
+			fmt.Printf("Could not read config file: " + err.Error())
 		}
 	}
 

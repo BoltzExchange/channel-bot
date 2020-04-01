@@ -9,10 +9,10 @@ import (
 )
 
 type ChannelManager struct {
-	Interval int
+	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked"`
 
-	Lnd     *lnd.LND
-	Discord *discord.Discord
+	lnd     lnd.LightningClient
+	discord discord.NotificationService
 
 	imbalancedChannels  map[uint64]bool
 	significantChannels map[uint64]SignificantChannel
@@ -20,6 +20,8 @@ type ChannelManager struct {
 	startupHeight uint32
 	// Map of closed channels for which notifications were sent already
 	closedChannels map[uint64]bool
+
+	ticker *time.Ticker
 }
 
 type ratios struct {
@@ -30,17 +32,52 @@ type ratios struct {
 type SignificantChannel struct {
 	Alias     string
 	ChannelID uint64
-	MinRatio  string
-	MaxRatio  string
 
+	// These values are just for parsing
+	MinRatio string
+	MaxRatio string
+
+	// This struct is actually used for comparisons
 	ratios ratios
 }
 
-func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
+func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, lnd lnd.LightningClient, discord discord.NotificationService) {
 	logger.Info("Starting notification bot")
 
-	// Balance notifications related initializations
+	manager.lnd = lnd
+	manager.discord = discord
+
+	// Balance notification related initializations
 	manager.imbalancedChannels = make(map[uint64]bool)
+	manager.parseSignificantChannels(significantChannels)
+
+	// Closed channel notifications related initializations
+	manager.closedChannels = make(map[uint64]bool)
+
+	nodeInfo, err := manager.lnd.GetInfo()
+
+	if err != nil {
+		logger.Fatal("Could not get node info: " + err.Error())
+		return
+	}
+
+	manager.startupHeight = nodeInfo.BlockHeight
+
+	manager.check()
+
+	manager.ticker = time.NewTicker(time.Duration(manager.Interval) * time.Second)
+
+	for range manager.ticker.C {
+		manager.check()
+	}
+}
+
+func (manager *ChannelManager) check() {
+	manager.checkBalances()
+	manager.checkClosedChannels()
+}
+
+func (manager *ChannelManager) parseSignificantChannels(significantChannels []*SignificantChannel) {
 	manager.significantChannels = make(map[uint64]SignificantChannel)
 
 	for _, significant := range significantChannels {
@@ -56,48 +93,4 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel) {
 
 		manager.significantChannels[significant.ChannelID] = *significant
 	}
-
-	// Closed channel notifications related initializations
-	manager.closedChannels = make(map[uint64]bool)
-
-	nodeInfo, err := manager.Lnd.GetInfo()
-
-	if err != nil {
-		logger.Fatal("Could not get node info: " + err.Error())
-		return
-	}
-
-	manager.startupHeight = nodeInfo.BlockHeight
-
-	manager.check()
-
-	ticker := time.NewTicker(time.Duration(manager.Interval) * time.Second)
-
-	for range ticker.C {
-		manager.check()
-	}
-}
-
-func (manager *ChannelManager) check() {
-	manager.checkBalances()
-	manager.checkClosedChannels()
-}
-
-func getNodeName(lnd *lnd.LND, remotePubkey string) string {
-	nodeName := remotePubkey
-
-	nodeInfo, err := lnd.GetNodeInfo(remotePubkey)
-
-	// Use the alias if it can be queried and is not empty
-	if err == nil {
-		if nodeInfo.Node.Alias != "" {
-			nodeName = nodeInfo.Node.Alias
-		}
-	}
-
-	return nodeName
-}
-
-func formatChannelID(channelId uint64) string {
-	return strconv.FormatUint(channelId, 10)
 }

@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"github.com/BoltzExchange/channel-bot/discord"
+	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"strconv"
@@ -10,14 +11,14 @@ import (
 func (manager *ChannelManager) checkBalances() {
 	logger.Info("Checking significant channel balances")
 
-	channels, err := manager.Lnd.ListChannels()
+	channels, err := manager.lnd.ListChannels()
 
 	if err != nil {
 		logger.Error("Could not get channels: " + err.Error())
 		return
 	}
 
-	manager.checkSignificantChannelBalances(channels)
+	manager.checkSignificantChannelBalances(channels.Channels)
 
 	logger.Info("Checking normal channel balances")
 
@@ -39,6 +40,7 @@ func (manager *ChannelManager) checkBalances() {
 			continue
 		}
 
+		// Do not send notifications for a balanced channel more than once
 		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
 			continue
 		}
@@ -48,8 +50,8 @@ func (manager *ChannelManager) checkBalances() {
 	}
 }
 
-func (manager *ChannelManager) checkSignificantChannelBalances(channels *lnrpc.ListChannelsResponse) {
-	for _, channel := range channels.Channels {
+func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc.Channel) {
+	for _, channel := range channels {
 		significantChannel, isSignificant := manager.significantChannels[channel.ChanId]
 
 		if channel.UnsettledBalance != 0 || !isSignificant {
@@ -60,19 +62,20 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels *lnrpc.L
 
 		if channelRatio > significantChannel.ratios.max && channelRatio < significantChannel.ratios.min {
 			if contains := manager.imbalancedChannels[channel.ChanId]; contains {
-				significantChannel.logBalance(manager.Discord, channel, false)
+				significantChannel.logBalance(manager.discord, channel, false)
 				delete(manager.imbalancedChannels, channel.ChanId)
 			}
 
 			continue
 		}
 
+		// Do not send notifications for an imbalanced significant channel more than once
 		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
 			continue
 		}
 
 		manager.imbalancedChannels[channel.ChanId] = true
-		significantChannel.logBalance(manager.Discord, channel, true)
+		significantChannel.logBalance(manager.discord, channel, true)
 	}
 }
 
@@ -80,7 +83,7 @@ func getChannelRatio(channel *lnrpc.Channel) float64 {
 	return float64(channel.LocalBalance) / float64(channel.Capacity)
 }
 
-func (significantChannel *SignificantChannel) logBalance(discord *discord.Discord, channel *lnrpc.Channel, isImbalanced bool) {
+func (significantChannel *SignificantChannel) logBalance(discord discord.NotificationService, channel *lnrpc.Channel, isImbalanced bool) {
 	var info string
 	var emoji string
 
@@ -92,12 +95,12 @@ func (significantChannel *SignificantChannel) logBalance(discord *discord.Discor
 		emoji = ":zap:"
 	}
 
-	message := emoji + " Channel " + significantChannel.Alias + " `" + formatChannelID(channel.ChanId) + "` is **" + info + "** " + emoji + " :\n"
+	message := emoji + " Channel " + significantChannel.Alias + " `" + lnd.FormatChannelID(channel.ChanId) + "` is **" + info + "** " + emoji + " :\n"
 
 	localBalance, remoteBalance := formatChannelBalances(channel)
 	message += localBalance + "\n"
-	message += "    Minimal: " + formatFloat(float64(channel.LocalBalance)*significantChannel.ratios.min) + "\n"
-	message += "    Maximal: " + formatFloat(float64(channel.LocalBalance)*significantChannel.ratios.max) + "\n"
+	message += "    Minimal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.min) + "\n"
+	message += "    Maximal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.max) + "\n"
 	message += remoteBalance
 
 	logger.Info(message)
@@ -113,17 +116,13 @@ func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced b
 		info = "balanced again"
 	}
 
-	message := "Channel `" + formatChannelID(channel.ChanId) + "` to `" + getNodeName(manager.Lnd, channel.RemotePubkey) + "` is **" + info + "**:\n"
+	message := "Channel `" + lnd.FormatChannelID(channel.ChanId) + "` to `" + lnd.GetNodeName(manager.lnd, channel.RemotePubkey) + "` is **" + info + "**:\n"
 
 	localBalance, remoteBalance := formatChannelBalances(channel)
 	message += localBalance + "\n" + remoteBalance
 
 	logger.Info(message)
-	_ = manager.Discord.SendMessage(message)
-}
-
-func formatFloat(float float64) string {
-	return strconv.FormatFloat(float, 'f', 0, 64)
+	_ = manager.discord.SendMessage(message)
 }
 
 func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string) {
@@ -131,4 +130,8 @@ func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string)
 	remote = "  Remote: " + strconv.FormatInt(channel.RemoteBalance, 10)
 
 	return local, remote
+}
+
+func formatFloat(float float64) string {
+	return strconv.FormatFloat(float, 'f', 0, 64)
 }

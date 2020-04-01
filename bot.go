@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/BoltzExchange/channel-bot/notifications"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
@@ -16,13 +15,11 @@ func main() {
 	initLnd(cfg)
 	initDiscord(cfg)
 
-	channelManager := notifications.ChannelManager{
-		Lnd:      cfg.Lnd,
-		Discord:  cfg.Discord,
-		Interval: cfg.Interval,
-	}
+	go func() {
+		cfg.Notifications.Init(cfg.SignificantChannels, cfg.Lnd, cfg.Discord)
+	}()
 
-	channelManager.Init(cfg.SignificantChannels)
+	cfg.ChannelCleaner.Init(cfg.Lnd, cfg.Discord)
 }
 
 func initLnd(cfg *config) {
