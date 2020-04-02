@@ -85,9 +85,9 @@ func cleanUp() {
 }
 
 var cleaner = ChannelCleaner{
-	Interval:               1,
-	MaxInactiveTime:        30,
-	MaxInactiveTimePrivate: 60,
+	Interval:           1,
+	MaxInactive:        30,
+	MaxInactivePrivate: 60,
 }
 
 func TestInit(t *testing.T) {
@@ -111,6 +111,17 @@ func TestInit(t *testing.T) {
 	assert.True(t, strings.HasSuffix(loggedMessages[1], "Cleaning inactive channels\n"), "Does not execute cleaning routine on startup")
 
 	cleaner.ticker.Stop()
+
+	// Make sure nothing was initialized if the channel cleaner service is disabled
+	zeroIntervalCleaner := ChannelCleaner{
+		Interval: 0,
+	}
+
+	zeroIntervalCleaner.Init(lnd, discord)
+
+	assert.Nil(t, zeroIntervalCleaner.lnd)
+	assert.Nil(t, zeroIntervalCleaner.ticker)
+
 	cleanUp()
 }
 
@@ -134,8 +145,8 @@ func testForceClose(t *testing.T) {
 func TestForceCloseChannels(t *testing.T) {
 	cleanUp()
 
-	tooOldPublic := uint32(time.Now().AddDate(0, 0, -(cleaner.MaxInactiveTime + 1)).Unix())
-	tooOldPrivate := uint32(time.Now().AddDate(0, 0, -(cleaner.MaxInactiveTimePrivate + 1)).Unix())
+	tooOldPublic := uint32(time.Now().AddDate(0, 0, -(cleaner.MaxInactive + 1)).Unix())
+	tooOldPrivate := uint32(time.Now().AddDate(0, 0, -(cleaner.MaxInactivePrivate + 1)).Unix())
 
 	// Public channel
 	inactiveChannelsResponse.Channels = []*lnrpc.Channel{

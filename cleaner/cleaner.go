@@ -12,10 +12,10 @@ import (
 
 // TODO: should significant channels be ignored?
 type ChannelCleaner struct {
-	Interval int `long:"cleaner.interval" description:"Interval in hours at which inactive channels should be checked and possibly closed"`
+	Interval int `long:"cleaner.interval" description:"Interval in hours at which inactive channels should be checked and possibly closed. Set to 0 to disable this feature"`
 
-	MaxInactiveTime        int `long:"cleaner.maxinactive" description:"After how many days of inactivity a public channel should be force closed"`
-	MaxInactiveTimePrivate int `long:"cleaner.maxinactiveprivate" description:"After how many days of inactivity a private channel should be force closed"`
+	MaxInactive        int `long:"cleaner.maxinactive" description:"After how many days of inactivity a public channel should be force closed"`
+	MaxInactivePrivate int `long:"cleaner.maxinactiveprivate" description:"After how many days of inactivity a private channel should be force closed"`
 
 	lnd     lnd.LightningClient
 	discord discord.NotificationService
@@ -24,6 +24,10 @@ type ChannelCleaner struct {
 }
 
 func (cleaner *ChannelCleaner) Init(lnd lnd.LightningClient, discord discord.NotificationService) {
+	if cleaner.Interval == 0 {
+		return
+	}
+
 	logger.Info("Starting channel cleaner")
 
 	cleaner.lnd = lnd
@@ -50,8 +54,8 @@ func (cleaner *ChannelCleaner) forceCloseChannels() {
 
 	now := time.Now()
 
-	maxInactivePublic := time.Duration(cleaner.MaxInactiveTime) * time.Hour * 24
-	maxInactivePrivate := time.Duration(cleaner.MaxInactiveTimePrivate) * time.Hour * 24
+	maxInactivePublic := time.Duration(cleaner.MaxInactive) * time.Hour * 24
+	maxInactivePrivate := time.Duration(cleaner.MaxInactivePrivate) * time.Hour * 24
 
 	for _, channel := range channels.Channels {
 		// Get the channel info from LND to find out the last time the channel was active

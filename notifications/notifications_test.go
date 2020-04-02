@@ -123,6 +123,16 @@ func TestInit(t *testing.T) {
 	assert.True(t, strings.HasSuffix(loggedMessages[2], "Checking normal channel balances\n"))
 	assert.True(t, strings.HasSuffix(loggedMessages[3], "Checking closed channels\n"))
 
+	// Make sure nothing was initialized if the notification service is disabled
+	zeroIntervalChannelManager := &ChannelManager{
+		Interval: 0,
+	}
+
+	zeroIntervalChannelManager.Init([]*SignificantChannel{}, MockLndClient{}, MockDiscordClient{})
+
+	assert.Nil(t, zeroIntervalChannelManager.lnd)
+	assert.Nil(t, zeroIntervalChannelManager.ticker)
+
 	cleanUp()
 }
 
