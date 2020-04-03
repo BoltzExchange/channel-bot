@@ -26,55 +26,38 @@ More to come...
 
 ### Channel cleaner
 
-The channel cleaner takes care of force closing [zombie channels](https://medium.com/@gcomxx/get-rid-of-those-zombie-channels-1267d5a2a708). The interval at which the channels should be checked for zombies and the number of days that are needed for a channel to become a zombie are [configurable](#sample-config).
+The channel cleaner takes care of force closing [zombie channels](https://medium.com/@gcomxx/get-rid-of-those-zombie-channels-1267d5a2a708). The interval at which the channels should be checked for zombies and the number of days that are needed for a channel to become a zombie are [configurable](#configuration).
 
-## Sample config
+## Installation
 
-The bot can be configured either by CLI arguments or with a TOML config file:
+```shell
+go get -d github.com/BoltzExchange/channel-bot
 
-```toml
-# Notification options
-[notifications]
-# Interval in seconds at which the channel balances and closed channels should be checked. Set to 0 to disable this feature
-interval = 60
+cd $GOPATH/src/github.com/BoltzExchange/channel-bot
 
-# Channel Cleaner options
-[channelcleaner]
-# Interval in hours at which inactive channels should be checked and possibly closed. Set to 0 to disable this feature
-interval = 24
-# After how many days of inactivity a **public** channel should be force closed
-maxInactiveTime = 30
-# After how many days of inactivity a **private** channel should be force closed
-maxInactivePrivate = 60
-
-# Discord options
-[discord]
-# Prefix for Discord every message sent
-prefix = "[channels-testnet-btc]"
-# Name of the Discord channel to which the notifications should be sent
-channel = "testnet"
-# Discord authentication token
-token = "<token>"
-
-# LND options
-[lnd]
-host = "127.0.0.1"
-port = 10009
-certificate = "/home/bitcoin/.lnd/tls.cert"
-# This does not have to be the admin macaroon. The read only one is enough in case the bot should not force close channels
-macaroon = "/home/bitcoin/.lnd/data/chain/bitcoin/testnet/admin.macaroon"
-
-# Set a significant channel
-# There is no upper limit to the number of significant channels
-[[significantchannels]]
-# Give the channel a name to make them easily identifiable in the notifications
-alias = "wumbo-boltz"
-# Channel ID of the channel
-channelid = 619899158240231424
-
-# The ratio is calculated with: local balance / channel capacity
-# The minimal ratio before the channel is considered imbalanced
-minratio = "0.1"
-# The maximal ratio before the channel is considered imbalanced
-maxration = "0.6"
+make build && make install
 ```
+
+You can confirm successful installation by running the channel-bot command with the --help argument.
+
+```shell
+channel-bot --help
+```
+
+## Configuration
+
+The bot can be configured either by CLI arguments, or with a TOML config file.
+
+### CLI Arguments
+
+```shell
+channel-bot --help
+```
+
+### Config
+
+[`example/channel-bot.toml`](./example/channel-bot.toml)
+
+## Disclaimer
+
+Use at your own discretion. 

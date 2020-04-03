@@ -21,5 +21,8 @@ channel-bot.log
 # Config files
 channel-bot.toml
 
+# Don't ignore the example channel-bot.toml
+!example/channel-bot.toml
+
 # GoLand config
 .idea/
