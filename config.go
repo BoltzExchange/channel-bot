@@ -32,7 +32,7 @@ type config struct {
 	Help *helpOptions `group:"Help Options"`
 
 	// This option is only parsed in the TOML config file
-	SignificantChannels []*notifications.SignificantChannel `group:"Significant Channels Options"`
+	SignificantChannels []*notifications.SignificantChannel
 }
 
 func loadConfig() *config {
@@ -45,9 +45,9 @@ func loadConfig() *config {
 		},
 
 		ChannelCleaner: &cleaner.ChannelCleaner{
-			Interval:               24,
-			MaxInactiveTime:        30,
-			MaxInactiveTimePrivate: 60,
+			Interval:           24,
+			MaxInactive:        30,
+			MaxInactivePrivate: 60,
 		},
 	}
 

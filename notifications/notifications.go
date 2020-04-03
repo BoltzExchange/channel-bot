@@ -9,7 +9,7 @@ import (
 )
 
 type ChannelManager struct {
-	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked"`
+	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked. Set to 0 to disable this feature"`
 
 	lnd     lnd.LightningClient
 	discord discord.NotificationService
@@ -42,6 +42,10 @@ type SignificantChannel struct {
 }
 
 func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, lnd lnd.LightningClient, discord discord.NotificationService) {
+	if manager.Interval == 0 {
+		return
+	}
+
 	logger.Info("Starting notification bot")
 
 	manager.lnd = lnd

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"sync"
 )
 
 var lndInfo *lnrpc.GetInfoResponse
@@ -15,11 +16,21 @@ func main() {
 	initLnd(cfg)
 	initDiscord(cfg)
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+
 	go func() {
 		cfg.Notifications.Init(cfg.SignificantChannels, cfg.Lnd, cfg.Discord)
+		wg.Done()
 	}()
 
-	cfg.ChannelCleaner.Init(cfg.Lnd, cfg.Discord)
+	go func() {
+		cfg.ChannelCleaner.Init(cfg.Lnd, cfg.Discord)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	logger.Info("Shutting down")
 }
 
 func initLnd(cfg *config) {
