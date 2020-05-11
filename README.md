@@ -2,7 +2,7 @@
 
 This is a  bot that sends notifications for imbalanced and (force) closed lightning channels to a Discord channel. It also incorporates features for channel management like force closing channels that have been inactive for longer that a configured amount of time.
 
-Only LND version `0.9.0-beta` or higher is supported. Also Discord is currently the only service to which the bot can send its notifications.
+Only LND version `0.10.0-beta` or higher is supported. Also, Discord is currently the only service to which the bot can send its notifications.
 
 ## Features
 
