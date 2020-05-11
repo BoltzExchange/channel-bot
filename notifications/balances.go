@@ -60,7 +60,7 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc
 
 		channelRatio := getChannelRatio(channel)
 
-		if channelRatio > significantChannel.ratios.max && channelRatio < significantChannel.ratios.min {
+		if channelRatio > significantChannel.ratios.min && channelRatio < significantChannel.ratios.max {
 			if contains := manager.imbalancedChannels[channel.ChanId]; contains {
 				significantChannel.logBalance(manager.discord, channel, false)
 				delete(manager.imbalancedChannels, channel.ChanId)

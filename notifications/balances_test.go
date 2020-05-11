@@ -89,8 +89,8 @@ func TestCheckBalances(t *testing.T) {
 	// Should ignore channels that are are significant
 	channelManager.significantChannels[channels[0].ChanId] = SignificantChannel{
 		ratios: ratios{
-			min: 1,
-			max: -1,
+			min: -1,
+			max: 1,
 		},
 	}
 
@@ -117,8 +117,8 @@ func TestCheckSignificantChannelBalances(t *testing.T) {
 	}
 	channelManager.significantChannels[channels[0].ChanId] = SignificantChannel{
 		ratios: ratios{
-			max: 0.4,
-			min: 0.6,
+			max: 0.6,
+			min: 0.4,
 		},
 	}
 

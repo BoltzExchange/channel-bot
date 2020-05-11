@@ -59,6 +59,6 @@ func initDiscord(cfg *config) {
 
 func checkError(service string, err error) {
 	if err != nil {
-		logger.Fatal("Could not initalize "+service+": ", err)
+		logger.Fatal("Could not initialize "+service+": ", err)
 	}
 }
