@@ -31,7 +31,7 @@ default: build
 
 $(LINT_BIN):
 	@$(call print, "Fetching linter")
-	go get -u $(LINT_PKG)
+	go get $(LINT_PKG)
 
 #
 # Tests

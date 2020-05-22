@@ -110,12 +110,13 @@ func TestCheckSignificantChannelBalances(t *testing.T) {
 	channels := []*lnrpc.Channel{
 		{
 			ChanId:           123,
-			UnsettledBalance: 0,
-			LocalBalance:     70,
 			Capacity:         100,
+			LocalBalance:     70,
+			UnsettledBalance: 0,
 		},
 	}
-	channelManager.significantChannels[channels[0].ChanId] = SignificantChannel{
+	channelManager.significantChannels[123] = SignificantChannel{
+		ChannelID: 123,
 		ratios: ratios{
 			max: 0.6,
 			min: 0.4,
@@ -177,8 +178,30 @@ func TestCheckSignificantChannelBalances(t *testing.T) {
 	cleanUp()
 
 	// Should ignore channels that are not significant
-	channels[0].ChanId = 321
+	channels[0].LocalBalance = 50
+	channels = append(channels, &lnrpc.Channel{
+		ChanId:           321,
+		Capacity:         100,
+		LocalBalance:     70,
+		UnsettledBalance: 0,
+	})
 
+	channelManager.checkSignificantChannelBalances(channels)
+
+	assert.Len(t, sentMessages, 0)
+
+	cleanUp()
+
+	// Should send a notification in case a significant channel that cannot be found
+	channels[0].ChanId = 321
+	channelManager.checkSignificantChannelBalances(channels)
+
+	assert.Len(t, sentMessages, 1)
+	assert.True(t, channelManager.notFoundSignificantChannel[123])
+
+	cleanUp()
+
+	// Should not send a notification for a significant channel that cannot be found twice
 	channelManager.checkSignificantChannelBalances(channels)
 
 	assert.Len(t, sentMessages, 0)
@@ -195,7 +218,7 @@ func TestGetChannelRatio(t *testing.T) {
 	assert.Equal(t, getChannelRatio(channel), 0.6)
 }
 
-func checkLoggedBalance(t *testing.T, message string) {
+func checkLogs(t *testing.T, message string) {
 	assert.Len(t, sentMessages, 1)
 	assert.Len(t, loggedMessages, 1)
 
@@ -223,10 +246,10 @@ func TestLogSignificantBalance(t *testing.T) {
 	}
 
 	// Imbalanced
-	message := ":rotating_light: Channel Boltz `123` is **imbalanced** :rotating_light: :\n  Local: 32120398448\n    Minimal: 31088304354\n    Maximal: 124353217415\n  Remote: 123321123321"
+	message := ":rotating_light: Channel **Boltz** `123` is **imbalanced** :rotating_light: :\n  Local: 32120398448\n    Minimal: 31088304354\n    Maximal: 124353217415\n  Remote: 123321123321"
 	significantChannel.logBalance(&MockDiscordClient{}, channel, true)
 
-	checkLoggedBalance(t, message)
+	checkLogs(t, message)
 
 	cleanUp()
 
@@ -236,7 +259,7 @@ func TestLogSignificantBalance(t *testing.T) {
 
 	significantChannel.logBalance(&MockDiscordClient{}, channel, false)
 
-	checkLoggedBalance(t, message)
+	checkLogs(t, message)
 
 	cleanUp()
 }
@@ -255,7 +278,7 @@ func TestLogBalance(t *testing.T) {
 	message := "Channel `123` to `pubkey` is **imbalanced**:\n  Local: 32120398448\n  Remote: 123321123321"
 	channelManager.logBalance(channel, true)
 
-	checkLoggedBalance(t, message)
+	checkLogs(t, message)
 
 	cleanUp()
 
@@ -263,7 +286,27 @@ func TestLogBalance(t *testing.T) {
 	message = strings.Replace(message, "imbalanced", "balanced again", 1)
 	channelManager.logBalance(channel, false)
 
-	checkLoggedBalance(t, message)
+	checkLogs(t, message)
+
+	cleanUp()
+}
+
+func TestLogSignificantNotFound(t *testing.T) {
+	cleanUp()
+
+	significantChannel := &SignificantChannel{
+		Alias:     "Boltz",
+		ChannelID: 123,
+		ratios: ratios{
+			min: 0.2,
+			max: 0.8,
+		},
+	}
+
+	message := ":rotating_light: Channel **Boltz** `123` couldn't be found :rotating_light:"
+	significantChannel.logSignificantNotFound(&MockDiscordClient{})
+
+	checkLogs(t, message)
 
 	cleanUp()
 }

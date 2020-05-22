@@ -21,6 +21,9 @@ type ChannelManager struct {
 	// Map of closed channels for which notifications were sent already
 	closedChannels map[uint64]bool
 
+	// Map of significant channels that couldn't be found
+	notFoundSignificantChannel map[uint64]bool
+
 	ticker *time.Ticker
 }
 
@@ -53,6 +56,8 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, l
 
 	// Balance notification related initializations
 	manager.imbalancedChannels = make(map[uint64]bool)
+	manager.notFoundSignificantChannel = make(map[uint64]bool)
+
 	manager.parseSignificantChannels(significantChannels)
 
 	// Closed channel notifications related initializations

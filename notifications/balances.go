@@ -51,10 +51,22 @@ func (manager *ChannelManager) checkBalances() {
 }
 
 func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc.Channel) {
+	notFoundSignificantChannels := make(map[uint64]SignificantChannel)
+
+	for key, value := range manager.significantChannels {
+		notFoundSignificantChannels[key] = value
+	}
+
 	for _, channel := range channels {
 		significantChannel, isSignificant := manager.significantChannels[channel.ChanId]
 
-		if channel.UnsettledBalance != 0 || !isSignificant {
+		if !isSignificant {
+			continue
+		}
+
+		delete(notFoundSignificantChannels, channel.ChanId)
+
+		if channel.UnsettledBalance != 0 {
 			continue
 		}
 
@@ -77,6 +89,15 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc
 		manager.imbalancedChannels[channel.ChanId] = true
 		significantChannel.logBalance(manager.discord, channel, true)
 	}
+
+	for _, notFound := range notFoundSignificantChannels {
+		if contains := manager.notFoundSignificantChannel[notFound.ChannelID]; contains {
+			continue
+		}
+
+		manager.notFoundSignificantChannel[notFound.ChannelID] = true
+		notFound.logSignificantNotFound(manager.discord)
+	}
 }
 
 func getChannelRatio(channel *lnrpc.Channel) float64 {
@@ -95,7 +116,7 @@ func (significantChannel *SignificantChannel) logBalance(discord discord.Notific
 		emoji = ":zap:"
 	}
 
-	message := emoji + " Channel " + significantChannel.Alias + " `" + lnd.FormatChannelID(channel.ChanId) + "` is **" + info + "** " + emoji + " :\n"
+	message := emoji + " Channel **" + significantChannel.Alias + "** `" + lnd.FormatChannelID(channel.ChanId) + "` is **" + info + "** " + emoji + " :\n"
 
 	localBalance, remoteBalance := formatChannelBalances(channel)
 	message += localBalance + "\n"
@@ -123,6 +144,14 @@ func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced b
 
 	logger.Info(message)
 	_ = manager.discord.SendMessage(message)
+}
+
+func (significantChannel *SignificantChannel) logSignificantNotFound(discord discord.NotificationService) {
+	emoji := ":rotating_light:"
+	message := emoji + " Channel **" + significantChannel.Alias + "** `" + lnd.FormatChannelID(significantChannel.ChannelID) + "` couldn't be found " + emoji
+
+	logger.Info(message)
+	_ = discord.SendMessage(message)
 }
 
 func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string) {
