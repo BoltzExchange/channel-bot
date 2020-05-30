@@ -41,4 +41,4 @@ channelid = 619899158240231424
 # The minimal ratio before the channel is considered imbalanced
 minratio = "0.1"
 # The maximal ratio before the channel is considered imbalanced
-maxration = "0.6"
+maxratio = "0.6"
