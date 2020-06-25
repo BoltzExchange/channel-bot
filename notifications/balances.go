@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func (manager *ChannelManager) checkBalances() {
+func (manager *ChannelManager) checkBalances(isStartup bool) {
 	logger.Info("Checking significant channel balances")
 
 	channels, err := manager.lnd.ListChannels()
@@ -46,7 +46,10 @@ func (manager *ChannelManager) checkBalances() {
 		}
 
 		manager.imbalancedChannels[channel.ChanId] = true
-		manager.logBalance(channel, true)
+
+		if !isStartup {
+			manager.logBalance(channel, true)
+		}
 	}
 }
 

@@ -72,17 +72,17 @@ func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, l
 
 	manager.startupHeight = nodeInfo.BlockHeight
 
-	manager.check()
+	manager.check(true)
 
 	manager.ticker = time.NewTicker(time.Duration(manager.Interval) * time.Second)
 
 	for range manager.ticker.C {
-		manager.check()
+		manager.check(false)
 	}
 }
 
-func (manager *ChannelManager) check() {
-	manager.checkBalances()
+func (manager *ChannelManager) check(isStartup bool) {
+	manager.checkBalances(isStartup)
 	manager.checkClosedChannels()
 }
 

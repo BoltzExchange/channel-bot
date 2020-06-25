@@ -23,7 +23,7 @@ func TestCheckBalances(t *testing.T) {
 	}
 
 	// Should send a notification because the channel has too much outbound and no notification has been sent yet
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 1)
 	assert.True(t, channelManager.imbalancedChannels[channels[0].ChanId])
@@ -34,7 +34,7 @@ func TestCheckBalances(t *testing.T) {
 
 	// Should send a notification because the channel has too much inbound an no notification has been sent yet
 	channels[0].LocalBalance = 29
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 1)
 	assert.True(t, channelManager.imbalancedChannels[channels[0].ChanId])
@@ -42,7 +42,7 @@ func TestCheckBalances(t *testing.T) {
 	cleanUp()
 
 	// Should not send a notification although the channel is imbalanced because a notification has been sent already
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 0)
 
@@ -50,7 +50,7 @@ func TestCheckBalances(t *testing.T) {
 
 	// Should send a notification when the channel is balanced again
 	channels[0].LocalBalance = 50
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 1)
 	assert.False(t, channelManager.imbalancedChannels[channels[0].ChanId])
@@ -58,7 +58,7 @@ func TestCheckBalances(t *testing.T) {
 	cleanUp()
 
 	// Should send the notification for a channel that is balanced again only once
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 0)
 	assert.False(t, channelManager.imbalancedChannels[channels[0].ChanId])
@@ -69,7 +69,7 @@ func TestCheckBalances(t *testing.T) {
 	channels[0].LocalBalance = 0
 	channels[0].UnsettledBalance = 1
 
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 0)
 
@@ -79,7 +79,7 @@ func TestCheckBalances(t *testing.T) {
 	// Should ignore private channels
 	channels[0].Private = true
 
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 0)
 
@@ -94,11 +94,20 @@ func TestCheckBalances(t *testing.T) {
 		},
 	}
 
-	channelManager.checkBalances()
+	channelManager.checkBalances(false)
 
 	assert.Len(t, sentMessages, 0)
 
-	channels = channels[:0]
+	cleanUp()
+
+	// Should only check significant channels on startup
+	channelManager.significantChannels = map[uint64]SignificantChannel{}
+
+	channelManager.checkBalances(true)
+
+	assert.Len(t, sentMessages, 0)
+	assert.True(t, channelManager.imbalancedChannels[channels[0].ChanId])
+
 	cleanUp()
 }
 
