@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -50,7 +50,7 @@ func (lnd *LND) Connect() error {
 	lnd.client = lnrpc.NewLightningClient(con)
 
 	if lnd.ctx == nil {
-		macaroonFile, err := ioutil.ReadFile(lnd.Macaroon)
+		macaroonFile, err := os.ReadFile(lnd.Macaroon)
 
 		if err != nil {
 			return errors.New(fmt.Sprint("could not read LND macaroon: ", err))

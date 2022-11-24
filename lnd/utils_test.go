@@ -2,10 +2,11 @@ package lnd
 
 import (
 	"errors"
-	"github.com/lightningnetwork/lnd/lnrpc"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/stretchr/testify/assert"
 )
 
 const nodeAlias = "alias"
@@ -121,6 +122,7 @@ func TestParseChannelPoint(t *testing.T) {
 	}
 
 	for i, channelPoint := range channelPoints {
-		assert.EqualValues(t, expectedResults[i], parseChannelPoint(channelPoint), "Channel point \""+channelPoint+"\" is not parsed correctly")
+		assert.Equal(t, expectedResults[i].FundingTxid, parseChannelPoint(channelPoint).FundingTxid)
+		assert.Equal(t, expectedResults[i].OutputIndex, parseChannelPoint(channelPoint).OutputIndex)
 	}
 }

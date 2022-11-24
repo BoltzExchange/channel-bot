@@ -1,9 +1,10 @@
 package main
 
 import (
+	"sync"
+
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
-	"sync"
 )
 
 var lndInfo *lnrpc.GetInfoResponse
