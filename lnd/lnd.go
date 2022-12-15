@@ -67,6 +67,25 @@ func (lnd *LND) GetInfo() (*lnrpc.GetInfoResponse, error) {
 	return lnd.client.GetInfo(lnd.ctx, &lnrpc.GetInfoRequest{})
 }
 
+func (lnd *LND) ListPeers() (*lnrpc.ListPeersResponse, error) {
+	return lnd.client.ListPeers(lnd.ctx, &lnrpc.ListPeersRequest{})
+}
+
+func (lnd *LND) ConnectPeer(uri *lnrpc.LightningAddress) error {
+	_, err := lnd.client.ConnectPeer(lnd.ctx, &lnrpc.ConnectPeerRequest{
+		Addr:    uri,
+		Timeout: 30,
+	})
+	return err
+}
+
+func (lnd *LND) DisconnectPeer(pubkey string) error {
+	_, err := lnd.client.DisconnectPeer(lnd.ctx, &lnrpc.DisconnectPeerRequest{
+		PubKey: pubkey,
+	})
+	return err
+}
+
 func (lnd *LND) ListChannels() (*lnrpc.ListChannelsResponse, error) {
 	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{})
 }
@@ -83,7 +102,8 @@ func (lnd *LND) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
 
 func (lnd *LND) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
 	return lnd.client.GetNodeInfo(lnd.ctx, &lnrpc.NodeInfoRequest{
-		PubKey: pubkey,
+		PubKey:          pubkey,
+		IncludeChannels: false,
 	})
 }
 

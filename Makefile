@@ -25,7 +25,7 @@ define print
 	echo $(GREEN)$1$(NC)
 endef
 
-default: build
+default: build reconnector
 
 #
 # Dependencies
@@ -51,6 +51,10 @@ build:
 	@$(call print, "Building channel-bot")
 	$(GOBUILD) -o channel-bot $(LDFLAGS) $(PKG)
 
+reconnector:
+	@$(call print, "Building reconnector")
+	$(GOBUILD) -o reconnector $(LDFLAGS) $(PKG)/cmd/reconnector
+
 install:
 	@$(call print, "Installing channel-bot")
 	$(GOINSTALL) $(LDFLAGS) $(PKG)
@@ -67,4 +71,4 @@ lint: $(LINT_BIN)
 	@$(call print, "Linting source.")
 	$(LINT)
 
-.PHONY: build
+.PHONY: build reconnector

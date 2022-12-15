@@ -1,21 +1,38 @@
 package main
 
 import (
+	"github.com/BoltzExchange/channel-bot/cleaner"
+	"github.com/BoltzExchange/channel-bot/config"
+	"github.com/BoltzExchange/channel-bot/notifications"
+	"github.com/BoltzExchange/channel-bot/utils"
 	"sync"
 
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
-var lndInfo *lnrpc.GetInfoResponse
-
 func main() {
-	cfg := loadConfig()
-	initLogger(cfg.LogFile)
-	logConfig(cfg)
+	cfg := config.LoadConfig(&channelBotConfig{
+		BaseConfig: config.BaseConfig{
+			LogFile:    "./channel-bot.log",
+			ConfigFile: "./channel-bot.toml",
+		},
 
-	initLnd(cfg)
-	initDiscord(cfg)
+		Notifications: &notifications.ChannelManager{
+			Interval: 60,
+		},
+
+		ChannelCleaner: &cleaner.ChannelCleaner{
+			Interval:           24,
+			MaxInactive:        30,
+			MaxInactivePrivate: 60,
+		},
+	})
+	utils.InitLogger(cfg.BaseConfig.LogFile)
+	config.LogConfig(cfg)
+
+	lndInfo := utils.InitLnd(cfg.Lnd)
+	initDiscord(cfg, lndInfo)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -34,32 +51,14 @@ func main() {
 	logger.Info("Shutting down")
 }
 
-func initLnd(cfg *config) {
-	logger.Info("Initializing LND client")
-
-	err := cfg.Lnd.Connect()
-	checkError("LND", err)
-
-	lndInfo, err = cfg.Lnd.GetInfo()
-	checkError("LND", err)
-
-	logger.Info("Initialized LND client: ", stringify(lndInfo))
-}
-
-func initDiscord(cfg *config) {
+func initDiscord(cfg *channelBotConfig, lndInfo *lnrpc.GetInfoResponse) {
 	logger.Info("Initializing Discord client")
 
 	err := cfg.Discord.Init()
-	checkError("Discord", err)
+	utils.CheckError("Discord", err)
 
 	err = cfg.Discord.SendMessage("Started channel bot with LND node: **" + lndInfo.Alias + "** (`" + lndInfo.IdentityPubkey + "`)")
-	checkError("Discord", err)
+	utils.CheckError("Discord", err)
 
 	logger.Info("Initialized Discord client")
-}
-
-func checkError(service string, err error) {
-	if err != nil {
-		logger.Fatal("Could not initialize "+service+": ", err)
-	}
 }
