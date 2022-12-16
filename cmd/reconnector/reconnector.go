@@ -98,6 +98,8 @@ func reconnect(lnd *lnd.LND) {
 }
 
 func reconnectPeer(lnd *lnd.LND, peer string) error {
+	logger.Info("Reconnecting peer: " + peer)
+
 	peerInfo, err := lnd.GetNodeInfo(peer)
 	if err != nil {
 		return err
@@ -115,10 +117,12 @@ func reconnectPeer(lnd *lnd.LND, peer string) error {
 		})
 
 		// When the connection was established successfully, either other URIs don't have to be tried anymore
-		if err != nil {
+		if err == nil {
 			return nil
 		}
 	}
+
+	logger.Warning("Connecting failed on all addresses for peer: " + peer)
 
 	return nil
 }
