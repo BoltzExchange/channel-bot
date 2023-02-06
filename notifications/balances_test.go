@@ -175,17 +175,6 @@ func TestCheckSignificantChannelBalances(t *testing.T) {
 
 	cleanUp()
 
-	// Should ignore channels with unsettled balances
-	channels[0].LocalBalance = 0
-	channels[0].UnsettledBalance = 1
-
-	channelManager.checkSignificantChannelBalances(channels)
-
-	assert.Len(t, sentMessages, 0)
-
-	channels[0].UnsettledBalance = 0
-	cleanUp()
-
 	// Should ignore channels that are not significant
 	channels[0].LocalBalance = 50
 	channels = append(channels, &lnrpc.Channel{

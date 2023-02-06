@@ -69,10 +69,6 @@ func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc
 
 		delete(notFoundSignificantChannels, channel.ChanId)
 
-		if channel.UnsettledBalance != 0 {
-			continue
-		}
-
 		channelRatio := getChannelRatio(channel)
 
 		if channelRatio > significantChannel.ratios.min && channelRatio < significantChannel.ratios.max {
