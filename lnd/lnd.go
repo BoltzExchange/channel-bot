@@ -30,8 +30,8 @@ type LND struct {
 	Macaroon    string `long:"lnd.macaroon" description:"Path to a macaroon file of the LND node"`
 	Certificate string `long:"lnd.certificate" description:"Path to a certificate file of the LND node"`
 
-	ctx    context.Context
-	client lnrpc.LightningClient
+	Ctx    context.Context
+	Client lnrpc.LightningClient
 }
 
 func (lnd *LND) Connect() error {
@@ -47,9 +47,9 @@ func (lnd *LND) Connect() error {
 		return errors.New(fmt.Sprint("could not create gRPC client: ", err))
 	}
 
-	lnd.client = lnrpc.NewLightningClient(con)
+	lnd.Client = lnrpc.NewLightningClient(con)
 
-	if lnd.ctx == nil {
+	if lnd.Ctx == nil {
 		macaroonFile, err := os.ReadFile(lnd.Macaroon)
 
 		if err != nil {
@@ -57,22 +57,22 @@ func (lnd *LND) Connect() error {
 		}
 
 		macaroon := metadata.Pairs("macaroon", hex.EncodeToString(macaroonFile))
-		lnd.ctx = metadata.NewOutgoingContext(context.Background(), macaroon)
+		lnd.Ctx = metadata.NewOutgoingContext(context.Background(), macaroon)
 	}
 
 	return nil
 }
 
 func (lnd *LND) GetInfo() (*lnrpc.GetInfoResponse, error) {
-	return lnd.client.GetInfo(lnd.ctx, &lnrpc.GetInfoRequest{})
+	return lnd.Client.GetInfo(lnd.Ctx, &lnrpc.GetInfoRequest{})
 }
 
 func (lnd *LND) ListPeers() (*lnrpc.ListPeersResponse, error) {
-	return lnd.client.ListPeers(lnd.ctx, &lnrpc.ListPeersRequest{})
+	return lnd.Client.ListPeers(lnd.Ctx, &lnrpc.ListPeersRequest{})
 }
 
 func (lnd *LND) ConnectPeer(uri *lnrpc.LightningAddress) error {
-	_, err := lnd.client.ConnectPeer(lnd.ctx, &lnrpc.ConnectPeerRequest{
+	_, err := lnd.Client.ConnectPeer(lnd.Ctx, &lnrpc.ConnectPeerRequest{
 		Addr:    uri,
 		Timeout: 30,
 	})
@@ -80,35 +80,35 @@ func (lnd *LND) ConnectPeer(uri *lnrpc.LightningAddress) error {
 }
 
 func (lnd *LND) DisconnectPeer(pubkey string) error {
-	_, err := lnd.client.DisconnectPeer(lnd.ctx, &lnrpc.DisconnectPeerRequest{
+	_, err := lnd.Client.DisconnectPeer(lnd.Ctx, &lnrpc.DisconnectPeerRequest{
 		PubKey: pubkey,
 	})
 	return err
 }
 
 func (lnd *LND) ListChannels() (*lnrpc.ListChannelsResponse, error) {
-	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{})
+	return lnd.Client.ListChannels(lnd.Ctx, &lnrpc.ListChannelsRequest{})
 }
 
 func (lnd *LND) ListInactiveChannels() (*lnrpc.ListChannelsResponse, error) {
-	return lnd.client.ListChannels(lnd.ctx, &lnrpc.ListChannelsRequest{
+	return lnd.Client.ListChannels(lnd.Ctx, &lnrpc.ListChannelsRequest{
 		InactiveOnly: true,
 	})
 }
 
 func (lnd *LND) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) {
-	return lnd.client.ClosedChannels(lnd.ctx, &lnrpc.ClosedChannelsRequest{})
+	return lnd.Client.ClosedChannels(lnd.Ctx, &lnrpc.ClosedChannelsRequest{})
 }
 
 func (lnd *LND) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
-	return lnd.client.GetNodeInfo(lnd.ctx, &lnrpc.NodeInfoRequest{
+	return lnd.Client.GetNodeInfo(lnd.Ctx, &lnrpc.NodeInfoRequest{
 		PubKey:          pubkey,
 		IncludeChannels: false,
 	})
 }
 
 func (lnd *LND) GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error) {
-	return lnd.client.GetChanInfo(lnd.ctx, &lnrpc.ChanInfoRequest{
+	return lnd.Client.GetChanInfo(lnd.Ctx, &lnrpc.ChanInfoRequest{
 		ChanId: chanId,
 	})
 }
@@ -116,7 +116,7 @@ func (lnd *LND) GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error) {
 func (lnd *LND) ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseChannelClient, error) {
 	channel := parseChannelPoint(channelPoint)
 
-	return lnd.client.CloseChannel(lnd.ctx, &lnrpc.CloseChannelRequest{
+	return lnd.Client.CloseChannel(lnd.Ctx, &lnrpc.CloseChannelRequest{
 		ChannelPoint: &channel,
 		Force:        true,
 	})

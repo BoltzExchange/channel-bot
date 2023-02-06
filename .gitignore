@@ -5,7 +5,9 @@
 *.so
 *.dylib
 channel-bot
+acceptor
 reconnector
+!cmd/acceptor
 !cmd/reconnector
 
 # Test binary, built with `go test -c`
@@ -18,10 +20,12 @@ reconnector
 vendor/
 
 # Log files
+acceptor.log
 channel-bot.log
 reconnector.log
 
 # Config files
+acceptor.toml
 channel-bot.toml
 reconnector.toml
 
