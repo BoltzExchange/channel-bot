@@ -11,7 +11,7 @@ COMMIT := $(shell git log --pretty=format:'%h' -n 1)
 LDFLAGS := -ldflags "-X $(PKG)/build.Commit=$(COMMIT)"
 
 LINT_PKG := github.com/golangci/golangci-lint/cmd/golangci-lint
-LINT_VERSION := v1.50.1
+LINT_VERSION := v1.51.2
 
 LINT_BIN := golangci-lint
 LINT = $(LINT_BIN) run -v
