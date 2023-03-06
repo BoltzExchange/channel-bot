@@ -1,8 +1,8 @@
-package main
+package utils
 
 import "encoding/json"
 
-func stringify(data interface{}) string {
+func Stringify(data interface{}) string {
 	bytes, _ := json.MarshalIndent(data, "", "  ")
 	return string(bytes)
 }

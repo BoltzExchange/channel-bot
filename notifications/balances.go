@@ -1,16 +1,12 @@
 package notifications
 
 import (
-	"github.com/BoltzExchange/channel-bot/discord"
-	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
-	"strconv"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 )
 
-func (manager *ChannelManager) checkBalances(isStartup bool) {
-	logger.Info("Checking significant channel balances")
-
+func (manager *ChannelManager) prepareBalanceCheck() {
 	channels, err := manager.lnd.ListChannels()
 
 	if err != nil {
@@ -18,148 +14,69 @@ func (manager *ChannelManager) checkBalances(isStartup bool) {
 		return
 	}
 
-	manager.checkSignificantChannelBalances(channels.Channels)
+	manager.sm.populateChannels(channels)
+}
 
-	logger.Info("Checking normal channel balances")
+func (manager *ChannelManager) subscribeHtlcEvents() {
+	logger.Info("Subscribing to HTLC events")
 
-	for _, channel := range channels.Channels {
-		_, isSignificant := manager.significantChannels[channel.ChanId]
+	htlcEvents := make(chan *routerrpc.HtlcEvent)
+	htlcsErrChan := make(chan error)
 
-		if channel.UnsettledBalance != 0 || channel.Private || isSignificant {
-			continue
-		}
+	manager.lnd.SubscribeHtlcEvents(htlcEvents, htlcsErrChan)
 
-		channelRatio := getChannelRatio(channel)
+	logger.Info("Subscribing to invoices")
 
-		if channelRatio > 0.3 && channelRatio < 0.7 {
-			if contains := manager.imbalancedChannels[channel.ChanId]; contains {
-				manager.logBalance(channel, false)
-				delete(manager.imbalancedChannels, channel.ChanId)
+	invoices := make(chan *lnrpc.Invoice)
+	invoicesErrChan := make(chan error)
+
+	manager.lnd.SubscribeInvoices(invoices, invoicesErrChan)
+
+	manager.subs = &subscriptionChannels{
+		htlcEvents:      htlcEvents,
+		htlcErrChan:     htlcsErrChan,
+		invoices:        invoices,
+		invoicesErrChan: invoicesErrChan,
+	}
+}
+
+func (manager *ChannelManager) handleHtlcEvents(
+	openedChannels <-chan *lnrpc.Channel,
+	closedChannels <-chan *lnrpc.ChannelCloseSummary,
+) {
+	hc := initHtlcStates(manager.sm)
+
+	for {
+		select {
+		case opened := <-openedChannels:
+			manager.sm.handleOpen(opened)
+			break
+
+		case closed := <-closedChannels:
+			manager.sm.handleClose(closed)
+			break
+
+		case event := <-manager.subs.htlcEvents:
+			if event.EventType == routerrpc.HtlcEvent_SEND || event.EventType == routerrpc.HtlcEvent_FORWARD {
+				hc.handleEvent(event)
+			}
+			break
+
+		case invoice := <-manager.subs.invoices:
+			if invoice.State != lnrpc.Invoice_SETTLED {
+				break
 			}
 
-			continue
-		}
+			manager.sm.handleSettledInvoice(invoice)
+			break
 
-		// Do not send notifications for a balanced channel more than once
-		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
-			continue
-		}
+		case err := <-manager.subs.htlcErrChan:
+			logger.Fatal("LND channel event subscription errored: " + err.Error())
+			break
 
-		manager.imbalancedChannels[channel.ChanId] = true
-
-		if !isStartup {
-			manager.logBalance(channel, true)
+		case err := <-manager.subs.invoicesErrChan:
+			logger.Fatal("LND invoice subscription errored: " + err.Error())
+			break
 		}
 	}
-}
-
-func (manager *ChannelManager) checkSignificantChannelBalances(channels []*lnrpc.Channel) {
-	notFoundSignificantChannels := make(map[uint64]SignificantChannel)
-
-	for key, value := range manager.significantChannels {
-		notFoundSignificantChannels[key] = value
-	}
-
-	for _, channel := range channels {
-		significantChannel, isSignificant := manager.significantChannels[channel.ChanId]
-
-		if !isSignificant {
-			continue
-		}
-
-		delete(notFoundSignificantChannels, channel.ChanId)
-
-		channelRatio := getChannelRatio(channel)
-
-		if channelRatio > significantChannel.ratios.min && channelRatio < significantChannel.ratios.max {
-			if contains := manager.imbalancedChannels[channel.ChanId]; contains {
-				significantChannel.logBalance(manager.discord, channel, false)
-				delete(manager.imbalancedChannels, channel.ChanId)
-			}
-
-			continue
-		}
-
-		// Do not send notifications for an imbalanced significant channel more than once
-		if contains := manager.imbalancedChannels[channel.ChanId]; contains {
-			continue
-		}
-
-		manager.imbalancedChannels[channel.ChanId] = true
-		significantChannel.logBalance(manager.discord, channel, true)
-	}
-
-	for _, notFound := range notFoundSignificantChannels {
-		if contains := manager.notFoundSignificantChannel[notFound.ChannelID]; contains {
-			continue
-		}
-
-		manager.notFoundSignificantChannel[notFound.ChannelID] = true
-		notFound.logSignificantNotFound(manager.discord)
-	}
-}
-
-func getChannelRatio(channel *lnrpc.Channel) float64 {
-	return float64(channel.LocalBalance) / float64(channel.Capacity)
-}
-
-func (significantChannel *SignificantChannel) logBalance(discord discord.NotificationService, channel *lnrpc.Channel, isImbalanced bool) {
-	var info string
-	var emoji string
-
-	if isImbalanced {
-		info = "imbalanced"
-		emoji = ":rotating_light:"
-	} else {
-		info = "balanced again"
-		emoji = ":zap:"
-	}
-
-	message := emoji + " Channel **" + significantChannel.Alias + "** `" + lnd.FormatChannelID(channel.ChanId) + "` is **" + info + "** " + emoji + " :\n"
-
-	localBalance, remoteBalance := formatChannelBalances(channel)
-	message += localBalance + "\n"
-	message += "    Minimal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.min) + "\n"
-	message += "    Maximal: " + formatFloat(float64(channel.Capacity)*significantChannel.ratios.max) + "\n"
-	message += remoteBalance
-
-	logger.Info(message)
-	_ = discord.SendMessage(message)
-}
-
-func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced bool) {
-	var info string
-
-	if isImbalanced {
-		info = "imbalanced"
-	} else {
-		info = "balanced again"
-	}
-
-	message := "Channel `" + lnd.FormatChannelID(channel.ChanId) + "` to `" + lnd.GetNodeName(manager.lnd, channel.RemotePubkey) + "` is **" + info + "**:\n"
-
-	localBalance, remoteBalance := formatChannelBalances(channel)
-	message += localBalance + "\n" + remoteBalance
-
-	logger.Info(message)
-	_ = manager.discord.SendMessage(message)
-}
-
-func (significantChannel *SignificantChannel) logSignificantNotFound(discord discord.NotificationService) {
-	emoji := ":rotating_light:"
-	message := emoji + " Channel **" + significantChannel.Alias + "** `" + lnd.FormatChannelID(significantChannel.ChannelID) + "` couldn't be found " + emoji
-
-	logger.Info(message)
-	_ = discord.SendMessage(message)
-}
-
-func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string) {
-	local = "  Local: " + strconv.FormatInt(channel.LocalBalance, 10)
-	remote = "  Remote: " + strconv.FormatInt(channel.RemoteBalance, 10)
-
-	return local, remote
-}
-
-func formatFloat(float float64) string {
-	return strconv.FormatFloat(float, 'f', 0, 64)
 }

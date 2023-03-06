@@ -2,6 +2,7 @@ package lnd
 
 import (
 	"errors"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"strconv"
 	"testing"
 
@@ -69,6 +70,18 @@ func (m *MockLndClient) ListInactiveChannels() (*lnrpc.ListChannelsResponse, err
 	panic("")
 }
 
+func (m *MockLndClient) SubscribeInvoices(chan<- *lnrpc.Invoice, chan<- error) {
+	panic("implement me")
+}
+
+func (m *MockLndClient) SubscribeHtlcEvents(chan<- *routerrpc.HtlcEvent, chan<- error) {
+	panic("implement me")
+}
+
+func (m *MockLndClient) SubscribeChannelEvents(chan<- *lnrpc.ChannelEventUpdate, chan<- error) {
+	panic("implement me")
+}
+
 func TestGetNodeName(t *testing.T) {
 	client := &MockLndClient{}
 
@@ -96,7 +109,12 @@ func TestFormatChannelID(t *testing.T) {
 	}
 
 	for i, id := range channelIds {
-		assert.Equal(t, expectedResults[i], FormatChannelID(id), "Channel ID "+strconv.FormatInt(int64(id), 10)+" is not formatted correctly")
+		assert.Equal(
+			t,
+			expectedResults[i],
+			FormatChannelID(id),
+			"Channel ID "+strconv.FormatInt(int64(id), 10)+" is not formatted correctly",
+		)
 	}
 }
 

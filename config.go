@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/BoltzExchange/channel-bot/cleaner"
+	"github.com/BoltzExchange/channel-bot/utils"
 	"os"
 
 	"github.com/BoltzExchange/channel-bot/build"
@@ -40,9 +41,7 @@ func loadConfig() *config {
 		LogFile:    "./channel-bot.log",
 		ConfigFile: "./channel-bot.toml",
 
-		Notifications: &notifications.ChannelManager{
-			Interval: 60,
-		},
+		Notifications: &notifications.ChannelManager{},
 
 		ChannelCleaner: &cleaner.ChannelCleaner{
 			Interval:           24,
@@ -90,5 +89,5 @@ func printCouldNotParseCli(err error) {
 }
 
 func logConfig(cfg *config) {
-	logger.Info("Loaded config: " + stringify(cfg))
+	logger.Info("Loaded config: " + utils.Stringify(cfg))
 }

@@ -3,28 +3,28 @@ package notifications
 import (
 	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BoltzExchange/channel-bot/utils"
 	"github.com/google/logger"
-	"strconv"
-	"time"
+	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 )
 
-type ChannelManager struct {
-	Interval int `short:"i" long:"notifications.interval" description:"Interval in seconds at which the channel balances and closed channels should be checked. Set to 0 to disable this feature"`
+type subscriptionChannels struct {
+	htlcEvents  <-chan *routerrpc.HtlcEvent
+	htlcErrChan <-chan error
 
+	invoices        <-chan *lnrpc.Invoice
+	invoicesErrChan <-chan error
+}
+
+type ChannelManager struct {
 	lnd     lnd.LightningClient
 	discord discord.NotificationService
 
-	imbalancedChannels  map[uint64]bool
-	significantChannels map[uint64]SignificantChannel
+	nc *nodeCache
+	sm *stateManager
 
-	startupHeight uint32
-	// Map of closed channels for which notifications were sent already
-	closedChannels map[uint64]bool
-
-	// Map of significant channels that couldn't be found
-	notFoundSignificantChannel map[uint64]bool
-
-	ticker *time.Ticker
+	subs *subscriptionChannels
 }
 
 type ratios struct {
@@ -44,62 +44,49 @@ type SignificantChannel struct {
 	ratios ratios
 }
 
-func (manager *ChannelManager) Init(significantChannels []*SignificantChannel, lnd lnd.LightningClient, discord discord.NotificationService) {
-	if manager.Interval == 0 {
-		return
-	}
-
+func (manager *ChannelManager) Init(
+	significantChannels []*SignificantChannel,
+	lnd lnd.LightningClient,
+	discord discord.NotificationService,
+) {
 	logger.Info("Starting notification bot")
 
 	manager.lnd = lnd
 	manager.discord = discord
+	manager.nc = initNodeCache(manager.lnd, &utils.Clock{})
+	manager.sm = initStateManager(manager, significantChannels)
 
-	// Balance notification related initializations
-	manager.imbalancedChannels = make(map[uint64]bool)
-	manager.notFoundSignificantChannel = make(map[uint64]bool)
+	logger.Info("Subscribing to channel events")
 
-	manager.parseSignificantChannels(significantChannels)
+	errChan := make(chan error)
+	eventsChan := make(chan *lnrpc.ChannelEventUpdate)
 
-	// Closed channel notifications related initializations
-	manager.closedChannels = make(map[uint64]bool)
+	manager.lnd.SubscribeChannelEvents(eventsChan, errChan)
 
-	nodeInfo, err := manager.lnd.GetInfo()
+	manager.subscribeHtlcEvents()
+	manager.prepareBalanceCheck()
 
-	if err != nil {
-		logger.Fatal("Could not get node info: " + err.Error())
-		return
-	}
+	openedChannels := make(chan *lnrpc.Channel)
+	closedChannels := make(chan *lnrpc.ChannelCloseSummary)
 
-	manager.startupHeight = nodeInfo.BlockHeight
+	go manager.handleHtlcEvents(openedChannels, closedChannels)
 
-	manager.check(true)
+	for {
+		select {
+		case event := <-eventsChan:
+			switch event.Type {
+			case lnrpc.ChannelEventUpdate_OPEN_CHANNEL:
+				openedChannels <- event.GetOpenChannel()
 
-	manager.ticker = time.NewTicker(time.Duration(manager.Interval) * time.Second)
+			case lnrpc.ChannelEventUpdate_CLOSED_CHANNEL:
+				closedChannels <- event.GetClosedChannel()
+			}
 
-	for range manager.ticker.C {
-		manager.check(false)
-	}
-}
+			break
 
-func (manager *ChannelManager) check(isStartup bool) {
-	manager.checkBalances(isStartup)
-	manager.checkClosedChannels()
-}
-
-func (manager *ChannelManager) parseSignificantChannels(significantChannels []*SignificantChannel) {
-	manager.significantChannels = make(map[uint64]SignificantChannel)
-
-	for _, significant := range significantChannels {
-		maxRatio, _ := strconv.ParseFloat(significant.MaxRatio, 64)
-		minRatio, _ := strconv.ParseFloat(significant.MinRatio, 64)
-
-		ratios := ratios{
-			max: maxRatio,
-			min: minRatio,
+		case err := <-errChan:
+			logger.Fatal("LND channel event subscription errored: " + err.Error())
+			break
 		}
-
-		significant.ratios = ratios
-
-		manager.significantChannels[significant.ChannelID] = *significant
 	}
 }
