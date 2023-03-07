@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/BoltzExchange/channel-bot/utils"
 	"sync"
 
 	"github.com/google/logger"
@@ -43,7 +44,8 @@ func initLnd(cfg *config) {
 	lndInfo, err = cfg.Lnd.GetInfo()
 	checkError("LND", err)
 
-	logger.Info("Initialized LND client: ", stringify(lndInfo))
+	lndInfo.Features = nil
+	logger.Info("Initialized LND client: ", utils.Stringify(lndInfo))
 }
 
 func initDiscord(cfg *config) {
@@ -54,8 +56,6 @@ func initDiscord(cfg *config) {
 
 	err = cfg.Discord.SendMessage("Started channel bot with LND node: **" + lndInfo.Alias + "** (`" + lndInfo.IdentityPubkey + "`)")
 	checkError("Discord", err)
-
-	logger.Info("Initialized Discord client")
 }
 
 func checkError(service string, err error) {

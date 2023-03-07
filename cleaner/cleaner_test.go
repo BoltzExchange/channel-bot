@@ -3,6 +3,7 @@ package cleaner
 import (
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -44,7 +45,7 @@ func (m *MockLndClient) ClosedChannels() (*lnrpc.ClosedChannelsResponse, error) 
 
 const nodeAlias = "alias"
 
-func (m *MockLndClient) GetNodeInfo(pubkey string) (*lnrpc.NodeInfo, error) {
+func (m *MockLndClient) GetNodeInfo(string) (*lnrpc.NodeInfo, error) {
 	return &lnrpc.NodeInfo{
 		Node: &lnrpc.LightningNode{
 			Alias: nodeAlias,
@@ -61,7 +62,7 @@ var channelInfo = &lnrpc.ChannelEdge{
 	},
 }
 
-func (m *MockLndClient) GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error) {
+func (m *MockLndClient) GetChannelInfo(uint64) (*lnrpc.ChannelEdge, error) {
 	return channelInfo, nil
 }
 
@@ -76,6 +77,18 @@ var inactiveChannelsResponse = &lnrpc.ListChannelsResponse{}
 
 func (m *MockLndClient) ListInactiveChannels() (*lnrpc.ListChannelsResponse, error) {
 	return inactiveChannelsResponse, nil
+}
+
+func (m *MockLndClient) SubscribeInvoices(chan<- *lnrpc.Invoice, chan<- error) {
+	panic("implement me")
+}
+
+func (m *MockLndClient) SubscribeHtlcEvents(chan<- *routerrpc.HtlcEvent, chan<- error) {
+	panic("implement me")
+}
+
+func (m *MockLndClient) SubscribeChannelEvents(chan<- *lnrpc.ChannelEventUpdate, chan<- error) {
+	panic("implement me")
 }
 
 func cleanUp() {

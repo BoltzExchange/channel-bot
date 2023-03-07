@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
@@ -22,6 +23,10 @@ type LightningClient interface {
 	GetChannelInfo(chanId uint64) (*lnrpc.ChannelEdge, error)
 	ListInactiveChannels() (*lnrpc.ListChannelsResponse, error)
 	ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseChannelClient, error)
+
+	SubscribeInvoices(events chan<- *lnrpc.Invoice, errChan chan<- error)
+	SubscribeHtlcEvents(events chan<- *routerrpc.HtlcEvent, errChan chan<- error)
+	SubscribeChannelEvents(events chan<- *lnrpc.ChannelEventUpdate, errChan chan<- error)
 }
 
 type LND struct {
@@ -32,6 +37,7 @@ type LND struct {
 
 	ctx    context.Context
 	client lnrpc.LightningClient
+	router routerrpc.RouterClient
 }
 
 func (lnd *LND) Connect() error {
@@ -48,6 +54,7 @@ func (lnd *LND) Connect() error {
 	}
 
 	lnd.client = lnrpc.NewLightningClient(con)
+	lnd.router = routerrpc.NewRouterClient(con)
 
 	if lnd.ctx == nil {
 		macaroonFile, err := os.ReadFile(lnd.Macaroon)
@@ -100,4 +107,46 @@ func (lnd *LND) ForceCloseChannel(channelPoint string) (lnrpc.Lightning_CloseCha
 		ChannelPoint: &channel,
 		Force:        true,
 	})
+}
+
+func (lnd *LND) SubscribeChannelEvents(events chan<- *lnrpc.ChannelEventUpdate, errChan chan<- error) {
+	client, err := lnd.client.SubscribeChannelEvents(lnd.ctx, &lnrpc.ChannelEventSubscription{})
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	go handleSubscription(client.Recv, events, errChan)
+}
+
+func (lnd *LND) SubscribeInvoices(events chan<- *lnrpc.Invoice, errChan chan<- error) {
+	client, err := lnd.client.SubscribeInvoices(lnd.ctx, &lnrpc.InvoiceSubscription{})
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	go handleSubscription(client.Recv, events, errChan)
+}
+
+func (lnd *LND) SubscribeHtlcEvents(events chan<- *routerrpc.HtlcEvent, errChan chan<- error) {
+	client, err := lnd.router.SubscribeHtlcEvents(lnd.ctx, &routerrpc.SubscribeHtlcEventsRequest{})
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	go handleSubscription(client.Recv, events, errChan)
+}
+
+func handleSubscription[T any](recv func() (T, error), events chan<- T, errChan chan<- error) {
+	for {
+		event, err := recv()
+		if err != nil {
+			errChan <- err
+			break
+		}
+
+		events <- event
+	}
 }

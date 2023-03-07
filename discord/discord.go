@@ -51,6 +51,11 @@ func (discord *Discord) getChannelId() error {
 }
 
 func (discord *Discord) Init() (err error) {
+	if discord.Token == "" {
+		logger.Warning("Disabling Discord notifications because no token was set")
+		return
+	}
+
 	discord.api, err = discordgo.New("Bot " + discord.Token)
 
 	if err != nil {
@@ -63,10 +68,20 @@ func (discord *Discord) Init() (err error) {
 		return err
 	}
 
-	return discord.getChannelId()
+	err = discord.getChannelId()
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Initialized Discord client")
+	return nil
 }
 
 func (discord *Discord) SendMessage(message string) error {
+	if discord.api == nil {
+		return nil
+	}
+
 	if discord.Prefix != "" {
 		message = discord.Prefix + ": " + message
 	}
