@@ -21,6 +21,8 @@ type ChannelManager struct {
 	lnd                  lnd.LightningClient
 	notificationProvider providers.NotificationProvider
 
+	logInsignificant bool
+
 	nc *nodeCache
 	sm *stateManager
 
@@ -46,12 +48,14 @@ type SignificantChannel struct {
 
 func (manager *ChannelManager) Init(
 	significantChannels []*SignificantChannel,
+	logInsignificant bool,
 	lnd lnd.LightningClient,
 	notificationProvider providers.NotificationProvider,
 ) {
 	logger.Info("Starting notification bot")
 
 	manager.lnd = lnd
+	manager.logInsignificant = logInsignificant
 	manager.notificationProvider = notificationProvider
 	manager.nc = initNodeCache(manager.lnd, &utils.Clock{})
 	manager.sm = initStateManager(manager, significantChannels)

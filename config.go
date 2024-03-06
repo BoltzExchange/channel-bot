@@ -25,6 +25,8 @@ type config struct {
 	ConfigFile string `short:"c" long:"configfile" description:"Path to configuration file"`
 	LogFile    string `short:"l" long:"logfile" description:"Path to the log file"`
 
+	LogInsignificant bool `long:"loginsignificant" description:"Whether notifications should be sent for insignificant channels"`
+
 	Notifications  *notifications.ChannelManager `group:"Notification Options"`
 	ChannelCleaner *cleaner.ChannelCleaner       `group:"Channel Cleaner Options"`
 
@@ -42,6 +44,8 @@ func loadConfig() *config {
 	cfg := config{
 		LogFile:    "./channel-bot.log",
 		ConfigFile: "./channel-bot.toml",
+
+		LogInsignificant: true,
 
 		Notifications: &notifications.ChannelManager{},
 

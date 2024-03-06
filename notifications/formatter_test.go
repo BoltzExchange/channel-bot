@@ -69,6 +69,7 @@ func TestLogBalance(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	cm := &ChannelManager{
+		logInsignificant:     true,
 		lnd:                  &MockLndClient{},
 		notificationProvider: &MockDiscordClient{},
 		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),

@@ -33,6 +33,10 @@ func (sc *SignificantChannel) logBalance(notificationProvider providers.Notifica
 }
 
 func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced bool) {
+	if !manager.logInsignificant {
+		return
+	}
+
 	var info string
 
 	if isImbalanced {

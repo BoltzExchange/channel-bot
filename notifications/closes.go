@@ -7,6 +7,10 @@ import (
 )
 
 func (manager *ChannelManager) logClosedChannel(channel *lnrpc.ChannelCloseSummary) {
+	if !manager.logInsignificant {
+		return
+	}
+
 	closeType := "closed"
 
 	if channel.CloseType != lnrpc.ChannelCloseSummary_COOPERATIVE_CLOSE {

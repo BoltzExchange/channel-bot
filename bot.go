@@ -24,7 +24,7 @@ func main() {
 	wg.Add(2)
 
 	go func() {
-		cfg.Notifications.Init(cfg.SignificantChannels, cfg.Lnd, provider)
+		cfg.Notifications.Init(cfg.SignificantChannels, cfg.LogInsignificant, cfg.Lnd, provider)
 		wg.Done()
 	}()
 
