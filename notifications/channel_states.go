@@ -53,7 +53,7 @@ func (sm *stateManager) populateChannels(channels *lnrpc.ListChannelsResponse) {
 		if channel := sm.channels[signi.ChannelID]; channel != nil {
 			sm.checkChannel(channel)
 		} else {
-			signi.logSignificantNotFound(sm.manager.discord)
+			signi.logSignificantNotFound(sm.manager.notificationProvider)
 		}
 	}
 }
@@ -70,7 +70,7 @@ func (sm *stateManager) handleClose(closed *lnrpc.ChannelCloseSummary) {
 	sm.manager.logClosedChannel(closed)
 
 	if signi := sm.significantChannels[closed.ChanId]; signi != nil {
-		signi.logSignificantNotFound(sm.manager.discord)
+		signi.logSignificantNotFound(sm.manager.notificationProvider)
 	}
 }
 
@@ -119,7 +119,7 @@ func (sm *stateManager) checkChannel(channel *lnrpc.Channel) {
 	if channelRatio > checkRatio.min && channelRatio < checkRatio.max {
 		if contains := sm.imbalancedChannels[channel.ChanId]; contains {
 			if isSignificant {
-				signi.logBalance(sm.manager.discord, channel, false)
+				signi.logBalance(sm.manager.notificationProvider, channel, false)
 			} else {
 				sm.manager.logBalance(channel, false)
 			}
@@ -136,7 +136,7 @@ func (sm *stateManager) checkChannel(channel *lnrpc.Channel) {
 	sm.imbalancedChannels[channel.ChanId] = true
 
 	if isSignificant {
-		signi.logBalance(sm.manager.discord, channel, true)
+		signi.logBalance(sm.manager.notificationProvider, channel, true)
 	} else {
 		sm.manager.logBalance(channel, true)
 	}

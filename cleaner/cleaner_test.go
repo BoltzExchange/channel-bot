@@ -24,6 +24,14 @@ type MockDiscordClient struct{}
 
 var sentMessages []string
 
+func (m *MockDiscordClient) Name() string {
+	return "Mocked discord"
+}
+
+func (m *MockDiscordClient) Init() error {
+	return nil
+}
+
 func (m *MockDiscordClient) SendMessage(message string) error {
 	sentMessages = append(sentMessages, message)
 	return nil

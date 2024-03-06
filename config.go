@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/BoltzExchange/channel-bot/cleaner"
+	"github.com/BoltzExchange/channel-bot/notifications/providers/discord"
+	"github.com/BoltzExchange/channel-bot/notifications/providers/mattermost"
 	"github.com/BoltzExchange/channel-bot/utils"
 	"os"
 
 	"github.com/BoltzExchange/channel-bot/build"
-	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
 	"github.com/BoltzExchange/channel-bot/notifications"
 	"github.com/BurntSushi/toml"
@@ -27,8 +28,9 @@ type config struct {
 	Notifications  *notifications.ChannelManager `group:"Notification Options"`
 	ChannelCleaner *cleaner.ChannelCleaner       `group:"Channel Cleaner Options"`
 
-	Lnd     *lnd.LND         `group:"LND Options"`
-	Discord *discord.Discord `group:"Discord Options"`
+	Lnd        *lnd.LND               `group:"LND Options"`
+	Discord    *discord.Discord       `group:"Discord Options"`
+	Mattermost *mattermost.Mattermost `group:"Mattermost Options"`
 
 	Help *helpOptions `group:"Help Options"`
 

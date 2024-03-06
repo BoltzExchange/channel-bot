@@ -1,8 +1,8 @@
 package cleaner
 
 import (
-	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BoltzExchange/channel-bot/notifications/providers"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"math"
@@ -17,13 +17,13 @@ type ChannelCleaner struct {
 	MaxInactive        int `long:"cleaner.maxinactive" description:"After how many days of inactivity a public channel should be force closed"`
 	MaxInactivePrivate int `long:"cleaner.maxinactiveprivate" description:"After how many days of inactivity a private channel should be force closed"`
 
-	lnd     lnd.LightningClient
-	discord discord.NotificationService
+	lnd                  lnd.LightningClient
+	notificationProvider providers.NotificationProvider
 
 	ticker *time.Ticker
 }
 
-func (cleaner *ChannelCleaner) Init(lnd lnd.LightningClient, discord discord.NotificationService) {
+func (cleaner *ChannelCleaner) Init(lnd lnd.LightningClient, notificationProvider providers.NotificationProvider) {
 	if cleaner.Interval == 0 {
 		return
 	}
@@ -31,7 +31,7 @@ func (cleaner *ChannelCleaner) Init(lnd lnd.LightningClient, discord discord.Not
 	logger.Info("Starting channel cleaner")
 
 	cleaner.lnd = lnd
-	cleaner.discord = discord
+	cleaner.notificationProvider = notificationProvider
 
 	cleaner.forceCloseChannels()
 
@@ -111,5 +111,5 @@ func (cleaner *ChannelCleaner) logClosingChannels(channel *lnrpc.Channel, lastUp
 		"` because it was inactive for " + strconv.Itoa(lastUpdateDelta) + " days"
 
 	logger.Info(message)
-	_ = cleaner.discord.SendMessage(message)
+	_ = cleaner.notificationProvider.SendMessage(message)
 }

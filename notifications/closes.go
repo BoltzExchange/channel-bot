@@ -17,5 +17,5 @@ func (manager *ChannelManager) logClosedChannel(channel *lnrpc.ChannelCloseSumma
 		manager.nc.getNodeName(channel.RemotePubkey) + "` was " + closeType
 
 	logger.Info(message)
-	_ = manager.discord.SendMessage(message)
+	_ = manager.notificationProvider.SendMessage(message)
 }

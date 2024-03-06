@@ -1,14 +1,14 @@
 package notifications
 
 import (
-	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BoltzExchange/channel-bot/notifications/providers"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"strconv"
 )
 
-func (sc *SignificantChannel) logBalance(discord discord.NotificationService, channel *lnrpc.Channel, isImbalanced bool) {
+func (sc *SignificantChannel) logBalance(notificationProvider providers.NotificationProvider, channel *lnrpc.Channel, isImbalanced bool) {
 	var info string
 	var emoji string
 
@@ -29,7 +29,7 @@ func (sc *SignificantChannel) logBalance(discord discord.NotificationService, ch
 	message += remoteBalance
 
 	logger.Info(message)
-	_ = discord.SendMessage(message)
+	_ = notificationProvider.SendMessage(message)
 }
 
 func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced bool) {
@@ -47,15 +47,15 @@ func (manager *ChannelManager) logBalance(channel *lnrpc.Channel, isImbalanced b
 	message += localBalance + "\n" + remoteBalance
 
 	logger.Info(message)
-	_ = manager.discord.SendMessage(message)
+	_ = manager.notificationProvider.SendMessage(message)
 }
 
-func (sc *SignificantChannel) logSignificantNotFound(discord discord.NotificationService) {
+func (sc *SignificantChannel) logSignificantNotFound(notificationProvider providers.NotificationProvider) {
 	emoji := ":rotating_light:"
 	message := emoji + " Channel **" + sc.Alias + "** `" + lnd.FormatChannelID(sc.ChannelID) + "` couldn't be found " + emoji
 
 	logger.Info(message)
-	_ = discord.SendMessage(message)
+	_ = notificationProvider.SendMessage(message)
 }
 
 func formatChannelBalances(channel *lnrpc.Channel) (local string, remote string) {

@@ -39,9 +39,9 @@ func TestParseSignificantChannels(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	channelManager := &ChannelManager{
-		lnd:     &MockLndClient{},
-		discord: &MockDiscordClient{},
-		nc:      initNodeCache(&MockLndClient{}, &utils.Clock{}),
+		lnd:                  &MockLndClient{},
+		notificationProvider: &MockDiscordClient{},
+		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),
 	}
 
 	channelManager.sm = initStateManager(channelManager, significantChannels)
@@ -55,9 +55,9 @@ func TestPopulateChannels(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	channelManager := &ChannelManager{
-		lnd:     &MockLndClient{},
-		discord: &MockDiscordClient{},
-		nc:      initNodeCache(&MockLndClient{}, &utils.Clock{}),
+		lnd:                  &MockLndClient{},
+		notificationProvider: &MockDiscordClient{},
+		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),
 	}
 
 	significants := []*SignificantChannel{
@@ -104,9 +104,9 @@ func TestHandleOpen(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	channelManager := &ChannelManager{
-		lnd:     &MockLndClient{},
-		discord: &MockDiscordClient{},
-		nc:      initNodeCache(&MockLndClient{}, &utils.Clock{}),
+		lnd:                  &MockLndClient{},
+		notificationProvider: &MockDiscordClient{},
+		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),
 	}
 
 	sm := initStateManager(channelManager, nil)
@@ -129,7 +129,7 @@ func TestHandleClose(t *testing.T) {
 		lnd: &MockLndClient{
 			nodeAlias: "someNode",
 		},
-		discord: &MockDiscordClient{},
+		notificationProvider: &MockDiscordClient{},
 	}
 	channelManager.nc = initNodeCache(channelManager.lnd, &utils.Clock{})
 
@@ -192,9 +192,9 @@ func TestHandleHtlc(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	channelManager := &ChannelManager{
-		lnd:     &MockLndClient{},
-		discord: &MockDiscordClient{},
-		nc:      initNodeCache(&MockLndClient{}, &utils.Clock{}),
+		lnd:                  &MockLndClient{},
+		notificationProvider: &MockDiscordClient{},
+		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),
 	}
 
 	sm := initStateManager(channelManager, nil)
@@ -223,9 +223,9 @@ func TestHandleSettledInvoice(t *testing.T) {
 	logger.Init("", false, false, mockWriter)
 
 	channelManager := &ChannelManager{
-		lnd:     &MockLndClient{},
-		discord: &MockDiscordClient{},
-		nc:      initNodeCache(&MockLndClient{}, &utils.Clock{}),
+		lnd:                  &MockLndClient{},
+		notificationProvider: &MockDiscordClient{},
+		nc:                   initNodeCache(&MockLndClient{}, &utils.Clock{}),
 	}
 
 	sm := initStateManager(channelManager, nil)
@@ -265,7 +265,7 @@ func TestCheckChannel(t *testing.T) {
 		lnd: &MockLndClient{
 			nodeAlias: "someNode",
 		},
-		discord: &MockDiscordClient{},
+		notificationProvider: &MockDiscordClient{},
 	}
 	channelManager.nc = initNodeCache(channelManager.lnd, &utils.Clock{})
 

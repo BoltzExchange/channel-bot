@@ -1,8 +1,8 @@
 package notifications
 
 import (
-	"github.com/BoltzExchange/channel-bot/discord"
 	"github.com/BoltzExchange/channel-bot/lnd"
+	"github.com/BoltzExchange/channel-bot/notifications/providers"
 	"github.com/BoltzExchange/channel-bot/utils"
 	"github.com/google/logger"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -18,8 +18,8 @@ type subscriptionChannels struct {
 }
 
 type ChannelManager struct {
-	lnd     lnd.LightningClient
-	discord discord.NotificationService
+	lnd                  lnd.LightningClient
+	notificationProvider providers.NotificationProvider
 
 	nc *nodeCache
 	sm *stateManager
@@ -47,12 +47,12 @@ type SignificantChannel struct {
 func (manager *ChannelManager) Init(
 	significantChannels []*SignificantChannel,
 	lnd lnd.LightningClient,
-	discord discord.NotificationService,
+	notificationProvider providers.NotificationProvider,
 ) {
 	logger.Info("Starting notification bot")
 
 	manager.lnd = lnd
-	manager.discord = discord
+	manager.notificationProvider = notificationProvider
 	manager.nc = initNodeCache(manager.lnd, &utils.Clock{})
 	manager.sm = initStateManager(manager, significantChannels)
 
