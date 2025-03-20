@@ -11,18 +11,17 @@ COPY . .
 
 RUN make build
 
-FROM alpine:latest
+FROM alpine:3.18.12
 
 WORKDIR /app
 
 RUN apk add --no-cache ca-certificates bash
 
-COPY --from=builder /app/channel-bot /app/
+COPY --from=builder /app/channel-bot /usr/local/bin/
 
-RUN mkdir -p /app/config /app/logs
+RUN mkdir -p /app/config
 
 ENV CONFIG_FILE="/app/config/channel-bot.toml"
-ENV LOG_FILE="/app/logs/channel-bot.log"
 
-ENTRYPOINT ["/app/channel-bot", "--configfile", "/app/config/channel-bot.toml", "--logfile", "/app/logs/channel-bot.log"]
+ENTRYPOINT ["/usr/local/bin/channel-bot", "--configfile", "/app/config/channel-bot.toml"]
 
