@@ -30,10 +30,11 @@ type LightningClient interface {
 }
 
 type LND struct {
-	Host        string `long:"lnd.host" description:"gRPC host of the LND node"`
-	Port        int    `long:"lnd.port" description:"gRPC port of the LND node"`
-	Macaroon    string `long:"lnd.macaroon" description:"Path to a macaroon file of the LND node"`
-	Certificate string `long:"lnd.certificate" description:"Path to a certificate file of the LND node"`
+	Host            string `long:"lnd.host" description:"gRPC host of the LND node"`
+	Port            int    `long:"lnd.port" description:"gRPC port of the LND node"`
+	Macaroon        string `long:"lnd.macaroon" description:"Path to a macaroon file of the LND node"`
+	Certificate     string `long:"lnd.certificate" description:"Path to a certificate file of the LND node"`
+	TlsNameOverride string `long:"lnd.tls-name-override" description:"Override the TLS name of the LND node"`
 
 	ctx    context.Context
 	client lnrpc.LightningClient
@@ -41,7 +42,7 @@ type LND struct {
 }
 
 func (lnd *LND) Connect() error {
-	creds, err := credentials.NewClientTLSFromFile(lnd.Certificate, "")
+	creds, err := credentials.NewClientTLSFromFile(lnd.Certificate, lnd.TlsNameOverride)
 
 	if err != nil {
 		return errors.New(fmt.Sprint("could not read LND certificate: ", err))
